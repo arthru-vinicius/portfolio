@@ -28,9 +28,7 @@ test.describe("indexação", () => {
     expect(response.headers()["x-robots-tag"]).toBeUndefined();
   });
 
-  test("em outro host que sirva o mesmo site, pede para não indexar", async ({
-    request,
-  }) => {
+  test("em outro host, pede para não indexar", async ({ request }) => {
     const response = await request.get("/", {
       headers: { host: "outro-endereco.example" },
     });

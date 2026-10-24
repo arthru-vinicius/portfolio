@@ -11,10 +11,11 @@ export type IndexingSettings = {
 /**
  * Diz se a resposta pode ser indexada pelos buscadores.
  *
- * O site responde em mais de um endereço, sempre com o mesmo conteúdo. Só o
- * host do `PUBLIC_ORIGIN` pode ser indexado, para a busca não ver cópias. E só
- * com a indexação liberada, o que fica desligado enquanto o site está em
- * construção. Sem origem válida, nada é indexado.
+ * O app responde com o mesmo conteúdo a qualquer host que chegue até ele (o
+ * `127.0.0.1` do healthcheck, por exemplo). Só o host do `PUBLIC_ORIGIN` pode
+ * ser indexado, para a busca não ver cópias. E só com a indexação liberada, o
+ * que fica desligado enquanto o site está em construção. Sem origem válida,
+ * nada é indexado.
  *
  * @param hostHeader - Cabeçalho `Host` do pedido.
  * @param settings - Origem canônica e liberação da indexação.

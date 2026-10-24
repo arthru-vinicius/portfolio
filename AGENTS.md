@@ -1,8 +1,8 @@
-# AGENTS.md · portfolio (arthru.com)
+# AGENTS.md · portfolio (portfolio.arthru.com)
 
-Portfólio pessoal do Arthur Vinicius, publicado em **https://arthru.com**. O projeto é
-desenvolvido com agentes de IA trabalhando sob as regras deste arquivo, com revisão humana em
-todo pull request. As regras valem igualmente para agentes e pessoas.
+Portfólio pessoal do Arthur Vinicius, publicado em **https://portfolio.arthru.com**. O
+projeto é desenvolvido com agentes de IA trabalhando sob as regras deste arquivo, com revisão
+humana em todo pull request. As regras valem igualmente para agentes e pessoas.
 
 ## Visão geral
 

@@ -1,8 +1,8 @@
 # portfolio
 
-Portfólio profissional do Arthur Vinicius, publicado em **https://arthru.com**: site em
-português e inglês, um painel para editar o conteúdo e o currículo em PDF e XLSX gerado a partir
-dele.
+Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.arthru.com**:
+site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e XLSX gerado
+a partir dele.
 
 > Em construção. A estrutura do projeto está pronta; o conteúdo e o design chegam nas próximas
 > entregas.
@@ -56,8 +56,8 @@ valores padrão bastam.
 - O container escuta em `0.0.0.0:3000`, roda como o uid 1001 e grava apenas em `/data`.
 - `GET /api/health` responde 200 com o banco aberto e as migrations aplicadas, e 503 caso
   contrário. O corpo traz a versão da imagem e o status do último deploy.
-- O site responde igual em todos os endereços configurados, e nenhum domínio fica no código. Só
-  o host do `PUBLIC_ORIGIN` pode ser indexado, e só com `ALLOW_INDEXING=true`. As outras
+- Nenhum domínio fica no código: as URLs absolutas e a regra de indexação saem do
+  `PUBLIC_ORIGIN`. Só o host dele pode ser indexado, e só com `ALLOW_INDEXING=true`. As outras
   respostas levam `X-Robots-Tag: noindex`.
 - O job de CI se chama `verify` e roda em ARM64, a mesma arquitetura do servidor.
 
