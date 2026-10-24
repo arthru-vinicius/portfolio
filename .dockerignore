@@ -10,3 +10,8 @@
 !src/
 !public/
 !migrations/
+
+# Testes de unidade ficam ao lado do código, mas não fazem parte do build: os
+# fixtures de que eles dependem nem entram no contexto.
+src/**/*.test.ts
+src/**/*.test.tsx
