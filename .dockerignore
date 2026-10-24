@@ -1,0 +1,12 @@
+# Lista de permissão: tudo fica fora do contexto de build, exceto o que o
+# build usa. Assim nada local (segredos, banco de desenvolvimento, relatórios)
+# entra na imagem por acidente. Arquivo novo necessário no build entra aqui.
+*
+
+!package.json
+!package-lock.json
+!next.config.ts
+!tsconfig.json
+!src/
+!public/
+!migrations/

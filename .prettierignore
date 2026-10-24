@@ -1,0 +1,7 @@
+# O Prettier já ignora o que está no .gitignore. Além disso:
+
+# Mantido pelo npm
+package-lock.json
+
+# Documentação escrita à mão: tabelas e quebras de linha ficam como estão
+*.md
