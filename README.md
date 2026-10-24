@@ -35,13 +35,16 @@ npm ci
 npm run dev   # http://localhost:3000, com o banco em .data/portfolio.db
 ```
 
-As variáveis do servidor estão em `.env.example`. Fora de produção, os valores padrão bastam.
+Na primeira vez, o `npm run dev` grava no banco local um documento fictício, como rascunho e
+como revisão publicada. As variáveis do servidor estão em `.env.example`; fora de produção, os
+valores padrão bastam.
 
 ## Scripts
 
 | Script | O que faz |
 |---|---|
-| `npm run dev` | servidor de desenvolvimento |
+| `npm run dev` | servidor de desenvolvimento, com o banco local semeado |
+| `npm run db:seed` | grava o documento fictício no banco local (`-- --force` sobrescreve) |
 | `npm run build` | build de produção |
 | `npm run lint` · `npm run typecheck` · `npm test` | ESLint, TypeScript e testes de unidade (Vitest) |
 | `npm run format` | formata o código com o Prettier |
