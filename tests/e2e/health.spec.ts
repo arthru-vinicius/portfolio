@@ -28,4 +28,18 @@ test.describe("GET /api/health", () => {
 
     expect(response.status()).toBe(200);
   });
+
+  test("fica fora do proxy, inclusive num host que não é o canônico", async ({
+    request,
+  }) => {
+    // Num host assim, o proxy acrescentaria o noindex: a ausência do cabeçalho
+    // mostra que ele não rodou.
+    const response = await request.get("/api/health", {
+      headers: { host: "outro-endereco.example" },
+      maxRedirects: 0,
+    });
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()["x-robots-tag"]).toBeUndefined();
+  });
 });

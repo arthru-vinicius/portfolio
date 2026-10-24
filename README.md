@@ -56,7 +56,9 @@ valores padrão bastam.
 - O container escuta em `0.0.0.0:3000`, roda como o uid 1001 e grava apenas em `/data`.
 - `GET /api/health` responde 200 com o banco aberto e as migrations aplicadas, e 503 caso
   contrário. O corpo traz a versão da imagem e o status do último deploy.
-- Fora de `arthru.com`, toda resposta leva `X-Robots-Tag: noindex`.
+- O site responde igual em todos os endereços configurados, e nenhum domínio fica no código. Só
+  o host do `PUBLIC_ORIGIN` pode ser indexado, e só com `ALLOW_INDEXING=true`. As outras
+  respostas levam `X-Robots-Tag: noindex`.
 - O job de CI se chama `verify` e roda em ARM64, a mesma arquitetura do servidor.
 
 ## Desenvolvimento com IA
