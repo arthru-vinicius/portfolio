@@ -42,6 +42,7 @@ O `package.json` é a fonte da verdade; estes são os principais.
 | Comando | Para quê |
 |---|---|
 | `npm run dev` | desenvolvimento local, com SQLite local e dados de exemplo |
+| `npm run db:seed` | grava o documento fictício no banco local (o `dev` já roda) |
 | `npm run typecheck` · `npm run lint` · `npm test` | tipos, lint e testes de unidade |
 | `npm run build` | build de produção do Next |
 | `npm run docker:build` | build da imagem como o servidor faz (builder clássico, sem BuildKit) |
