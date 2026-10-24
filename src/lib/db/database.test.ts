@@ -50,7 +50,7 @@ describe("getDatabase", () => {
       .map((row) => String(row.name));
 
     expect(tables).toEqual(
-      expect.arrayContaining(["draft", "published_revisions"]),
+      expect.arrayContaining(["draft", "published_revisions", "rate_limits"]),
     );
     expect(getDatabase()).toBe(first);
   });
