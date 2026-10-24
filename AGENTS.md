@@ -47,7 +47,7 @@ O `package.json` é a fonte da verdade; estes são os principais.
 | `npm run build` | build de produção do Next |
 | `npm run docker:build` | build da imagem como o servidor faz (builder clássico, sem BuildKit) |
 | `npm run test:e2e` | Playwright contra o container local, com os limites de produção (depois do `docker:build`) |
-| `npm run admin:hash-password` | gera o hash da senha do painel; **só o mantenedor roda** |
+| `npm run admin:hash-password` | gera o hash da senha do painel; com a senha real, **só o mantenedor roda** |
 
 ## Regras
 
@@ -69,8 +69,10 @@ O `package.json` é a fonte da verdade; estes são os principais.
    (`openssl`, `crypto`: a saída fica no histórico da sessão), não pedem que um segredo seja
    colado no chat e não rodam `admin:hash-password` com uma senha real.
 6. **Painel seguro por padrão.** Toda Server Action e todo route handler do painel conferem a
-   sessão por conta própria; layout e proxy não bastam. O painel só responde nos hosts
-   permitidos e falha fechado: sem segredo configurado, ele não abre.
+   sessão por conta própria (`requireAdmin()`); layout e proxy não bastam. Server Action nova
+   entra na lista de `src/app/admin/server-actions.test.ts`, que chama cada uma sem sessão. O
+   painel só responde nos hosts permitidos e falha fechado: sem segredo configurado, ele não
+   abre.
 7. **Antes de dizer que terminou:** `typecheck`, `lint`, `test`, `build` e `docker:build`;
    para mudança no servidor, rode o container local e o e2e. Mudança visual é conferida no
    navegador, no celular e no computador, nos dois idiomas e nos dois temas. **Diga o que não
