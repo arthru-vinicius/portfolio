@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Tokens provisórios da página em construção. O sistema de design do site
+   (tipografia, espaçamento e o seletor de tema) entra com o site público. */
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+  --color-muted: #525252;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0a0a0a;
+    --color-foreground: #ededed;
+    --color-muted: #a3a3a3;
+  }
+}
