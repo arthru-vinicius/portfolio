@@ -44,6 +44,11 @@ jobs:
       - name: Imagem Docker com o builder clássico, como no servidor
         run: npm run docker:build
 
+      # Os testes do painel usam um navegador de verdade: o Chromium da versão
+      # do Playwright no lockfile, só o modo headless.
+      - name: Navegador dos testes de ponta a ponta
+        run: npx playwright install --with-deps --only-shell chromium
+
       - name: Testes de ponta a ponta contra o container
         run: npm run test:e2e
 
