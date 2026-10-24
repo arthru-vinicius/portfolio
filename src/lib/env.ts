@@ -2,8 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-/** Caminho do banco no desenvolvimento e nos testes, relativo à raiz do projeto. */
-const LOCAL_DATABASE_PATH = ".data/portfolio.db";
+import { LOCAL_DATABASE_PATH } from "@/lib/db/paths";
 
 /** Texto opcional em que string vazia conta como ausente, como no arquivo de segredos da VM. */
 const optionalText = z

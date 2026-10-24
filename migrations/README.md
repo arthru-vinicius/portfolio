@@ -11,7 +11,8 @@ com o checksum do arquivo.
   versão anterior ainda usa, e coluna nova precisa de valor padrão ou aceitar `NULL`.
 - **Migration aplicada não se edita.** O checksum muda, e o servidor se recusa a subir. Para
   corrigir, crie uma migration nova.
-- **Sem `BEGIN` nem `COMMIT` no arquivo.** Cada migration já roda numa transação própria.
+- **Sem `BEGIN TRANSACTION` nem `COMMIT` no arquivo.** Cada migration já roda numa transação
+  própria. O `BEGIN ... END` do corpo de um gatilho não conta.
 - **Numeração sem repetição.** Duas branches com o mesmo número fazem a leitura falhar; quem
   mesclar por último renumera.
 - **Tabelas `STRICT`**, para o SQLite recusar valores de tipo errado.
