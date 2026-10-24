@@ -1,0 +1,12 @@
+# LF em todo o repositório, inclusive num checkout no Windows: o projeto é
+# editado no Windows e no Linux, e a imagem roda em Linux.
+* text=auto eol=lf
+
+*.ico binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.avif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
