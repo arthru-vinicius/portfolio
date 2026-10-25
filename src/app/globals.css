@@ -1,11 +1,15 @@
 @import "tailwindcss";
 
-/* Tokens provisórios da página em construção. O sistema de design do site
-   (tipografia, espaçamento e o seletor de tema) entra com o site público. */
+/* Tokens provisórios, usados pela página em construção e pelo painel. O sistema
+   de design do site (tipografia, espaçamento e o seletor de tema) entra com o
+   site público. Contraste conferido nos dois temas: texto a partir de 4,5:1 e
+   bordas de controles a partir de 3:1. */
 @theme {
   --color-background: #ffffff;
   --color-foreground: #171717;
   --color-muted: #525252;
+  --color-control: #737373;
+  --color-danger: #b42318;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -13,5 +17,7 @@
     --color-background: #0a0a0a;
     --color-foreground: #ededed;
     --color-muted: #a3a3a3;
+    --color-control: #8c8c8c;
+    --color-danger: #f97066;
   }
 }

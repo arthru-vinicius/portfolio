@@ -31,6 +31,22 @@ const deployStatus = {
   at: "2026-01-01T00:00:00Z",
 };
 
+/**
+ * Credenciais fictícias do painel, só para o e2e. O hash é o da senha abaixo,
+ * gerado com o custo mínimo aceito pelo app, para os logins do teste serem
+ * rápidos. O Turnstile usa as chaves de teste da Cloudflare, que sempre
+ * passam.
+ */
+const admin = {
+  username: "admin-e2e",
+  password: "senha-ficticia-do-e2e",
+  passwordHash:
+    "scrypt:16384:8:1:p6V6TF03wLzJzJG8diG6Ow:5I6WIBHCTLRBQFtgv_R__-3VALoDItBQjVF_z5eR11A",
+  sessionSecret: "segredo-ficticio-do-e2e-com-mais-de-32-caracteres",
+  turnstileSiteKey: "1x00000000000000000000AA",
+  turnstileSecretKey: "1x0000000000000000000000000000000AA",
+};
+
 /** Falha esperada do roteiro, com mensagem para quem roda. */
 class E2eSetupError extends Error {}
 
@@ -94,6 +110,16 @@ function startContainer(deployDir: string): void {
       "--env",
       "ADMIN_HOSTS=127.0.0.1",
       "--env",
+      `ADMIN_USERNAME=${admin.username}`,
+      "--env",
+      `ADMIN_PASSWORD_HASH=${admin.passwordHash}`,
+      "--env",
+      `ADMIN_SESSION_SECRET=${admin.sessionSecret}`,
+      "--env",
+      `TURNSTILE_SITE_KEY=${admin.turnstileSiteKey}`,
+      "--env",
+      `TURNSTILE_SECRET_KEY=${admin.turnstileSecretKey}`,
+      "--env",
       "MAIL_RELAY_URL=",
       "--env",
       "DEPLOY_STATUS_FILE=/deploy/last-deploy.json",
@@ -133,6 +159,8 @@ function runPlaywright(imageVersion: string): number {
         E2E_BASE_URL: baseURL,
         E2E_EXPECTED_VERSION: imageVersion,
         E2E_DEPLOY_STATUS: JSON.stringify(deployStatus),
+        E2E_ADMIN_USERNAME: admin.username,
+        E2E_ADMIN_PASSWORD: admin.password,
       },
     },
   );

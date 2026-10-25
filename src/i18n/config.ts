@@ -6,3 +6,9 @@ export type Locale = (typeof locales)[number];
 
 /** Idioma usado quando nenhum outro foi escolhido. */
 export const defaultLocale: Locale = "pt-BR";
+
+/**
+ * Fuso das datas exibidas. O container roda em UTC, então toda formatação de
+ * data passa este fuso explicitamente.
+ */
+export const timeZone = "America/Recife";

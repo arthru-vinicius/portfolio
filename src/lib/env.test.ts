@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { getServerEnv } from "./env";
+import { TURNSTILE_SITE_KEY, TURNSTILE_TEST_SITE_KEY } from "@/lib/turnstile";
+
+import { getAdminEnv, getServerEnv, type AdminEnv } from "./env";
 
 describe("getServerEnv", () => {
   it("usa o banco e a origem locais fora de produção", () => {
@@ -83,5 +85,153 @@ describe("getServerEnv", () => {
     expect(() => getServerEnv({ NODE_ENV: "staging" })).toThrow(
       /Variáveis de ambiente inválidas[\s\S]*NODE_ENV/,
     );
+  });
+});
+
+// Valores fictícios, no formato que cada variável exige.
+const ADMIN_SECRETS = {
+  ADMIN_USERNAME: "admin-ficticio",
+  ADMIN_PASSWORD_HASH: `scrypt:16384:8:1:${"A".repeat(22)}:${"B".repeat(43)}`,
+  ADMIN_SESSION_SECRET: "segredo-ficticio-de-sessao-com-mais-de-32-caracteres",
+  TURNSTILE_SECRET_KEY: "secret-ficticia-do-turnstile",
+};
+const PRODUCTION = {
+  NODE_ENV: "production",
+  PUBLIC_ORIGIN: "https://portfolio.example.com",
+  ADMIN_HOSTS: "portfolio.example.com",
+};
+
+function ready(env: AdminEnv) {
+  if (env.status !== "ready") {
+    throw new Error(
+      `o painel deveria estar pronto: ${env.problems.join("; ")}`,
+    );
+  }
+  return env.config;
+}
+
+describe("getAdminEnv", () => {
+  it("fica pronto com tudo definido", () => {
+    const env = getAdminEnv({ ...PRODUCTION, ...ADMIN_SECRETS });
+
+    expect(env.hosts).toEqual(["portfolio.example.com"]);
+    expect(ready(env)).toMatchObject({
+      publicOrigin: "https://portfolio.example.com",
+      username: "admin-ficticio",
+      turnstile: {
+        siteKey: TURNSTILE_SITE_KEY,
+        secretKey: "secret-ficticia-do-turnstile",
+      },
+    });
+  });
+
+  it("desliga o painel, sem lançar erro, quando falta segredo, e diz qual", () => {
+    const env = getAdminEnv(PRODUCTION);
+
+    expect(env).toMatchObject({
+      status: "disabled",
+      hosts: ["portfolio.example.com"],
+    });
+    expect(env.status === "disabled" && env.problems).toEqual([
+      "ADMIN_USERNAME ausente",
+      "ADMIN_PASSWORD_HASH ausente",
+      "ADMIN_SESSION_SECRET ausente",
+      "TURNSTILE_SECRET_KEY ausente",
+    ]);
+  });
+
+  it("nunca cai num valor de teste em produção", () => {
+    const env = getAdminEnv({ NODE_ENV: "production", ...ADMIN_SECRETS });
+
+    expect(env.hosts).toEqual([]);
+    expect(env.status === "disabled" && env.problems).toEqual([
+      "ADMIN_HOSTS vazia: o painel não responde em nenhum host",
+      "PUBLIC_ORIGIN ausente ou fora do formato https://host",
+    ]);
+  });
+
+  it.each([
+    [
+      "hash fora do formato",
+      { ADMIN_PASSWORD_HASH: "scrypt$16384$8$1$sal$hash" },
+      "ADMIN_PASSWORD_HASH fora do formato: gere com npm run admin:hash-password",
+    ],
+    [
+      "segredo de sessão curto",
+      { ADMIN_SESSION_SECRET: "curto" },
+      "ADMIN_SESSION_SECRET curto: o mínimo é 32 caracteres",
+    ],
+    [
+      "segredo vazio",
+      { TURNSTILE_SECRET_KEY: "" },
+      "TURNSTILE_SECRET_KEY ausente",
+    ],
+  ])("desliga o painel com %s", (_case, override, problem) => {
+    const env = getAdminEnv({ ...PRODUCTION, ...ADMIN_SECRETS, ...override });
+
+    expect(env.status === "disabled" && env.problems).toEqual([problem]);
+  });
+
+  it("lê os segredos exatamente como vêm, sem aparar nada", () => {
+    const secret = "  %!<}]-segredo-com-símbolos-e-espaços-nas-pontas  ";
+    const config = ready(
+      getAdminEnv({
+        ...PRODUCTION,
+        ...ADMIN_SECRETS,
+        TURNSTILE_SECRET_KEY: secret,
+        ADMIN_SESSION_SECRET: secret,
+      }),
+    );
+    const trimmed = ready(
+      getAdminEnv({
+        ...PRODUCTION,
+        ...ADMIN_SECRETS,
+        ADMIN_SESSION_SECRET: secret.trim(),
+      }),
+    );
+
+    expect(config.turnstile.secretKey).toBe(secret);
+    expect(config.sessionKey.equals(trimmed.sessionKey)).toBe(false);
+  });
+
+  it("usa a site key de teste fora de produção, e a variável troca a chave", () => {
+    expect(
+      ready(getAdminEnv({ NODE_ENV: "development", ...ADMIN_SECRETS }))
+        .turnstile.siteKey,
+    ).toBe(TURNSTILE_TEST_SITE_KEY);
+    expect(
+      ready(
+        getAdminEnv({
+          ...PRODUCTION,
+          ...ADMIN_SECRETS,
+          TURNSTILE_SITE_KEY: TURNSTILE_TEST_SITE_KEY,
+        }),
+      ).turnstile.siteKey,
+    ).toBe(TURNSTILE_TEST_SITE_KEY);
+  });
+
+  it("aceita localhost e 127.0.0.1 no desenvolvimento, sem ADMIN_HOSTS", () => {
+    expect(getAdminEnv({ NODE_ENV: "development" }).hosts).toEqual([
+      "localhost",
+      "127.0.0.1",
+    ]);
+    expect(getAdminEnv({ NODE_ENV: "test" }).hosts).toEqual([]);
+  });
+
+  it("deriva uma chave de sessão nova quando um dos segredos muda", () => {
+    const base = ready(getAdminEnv({ ...PRODUCTION, ...ADMIN_SECRETS }));
+    const otherUser = ready(
+      getAdminEnv({ ...PRODUCTION, ...ADMIN_SECRETS, ADMIN_USERNAME: "outro" }),
+    );
+
+    expect(base.sessionKey.equals(otherUser.sessionKey)).toBe(false);
+  });
+
+  it("desliga o painel, sem lançar erro, com variáveis do servidor inválidas", () => {
+    expect(getAdminEnv({ ...ADMIN_SECRETS, NODE_ENV: "staging" })).toEqual({
+      hosts: [],
+      status: "disabled",
+      problems: ["variáveis do servidor inválidas"],
+    });
   });
 });

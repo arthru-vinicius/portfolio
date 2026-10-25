@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { defaultLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
-import "./globals.css";
+import "../globals.css";
 
 const dictionary = getDictionary(defaultLocale);
 
