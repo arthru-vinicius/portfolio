@@ -11,6 +11,26 @@ const optionalText = z
   .transform((value) => (value === "" ? undefined : value))
   .optional();
 
+/** Origem local do `next dev`, usada quando `PUBLIC_ORIGIN` não está definida. */
+const LOCAL_PUBLIC_ORIGIN = "http://localhost:3000";
+
+/**
+ * Lê uma origem (`https://host`, sem caminho). Valor fora do formato vira
+ * `null`, e não erro: as variáveis que dependem dela desligam o recurso sem
+ * derrubar o app.
+ */
+function parseOrigin(value: string): string | null {
+  try {
+    const url = new URL(value);
+    const isHttp = url.protocol === "https:" || url.protocol === "http:";
+    return isHttp && url.origin === value.replace(/\/$/, "")
+      ? url.origin
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 const serverEnvSchema = z
   .object({
     NODE_ENV: z
@@ -19,6 +39,8 @@ const serverEnvSchema = z
     DATABASE_PATH: optionalText,
     GIT_SHA: optionalText,
     DEPLOY_STATUS_FILE: optionalText,
+    PUBLIC_ORIGIN: optionalText,
+    ALLOW_INDEXING: optionalText,
   })
   .transform((env) => ({
     nodeEnv: env.NODE_ENV,
@@ -30,6 +52,19 @@ const serverEnvSchema = z
       (env.NODE_ENV === "production" ? null : LOCAL_DATABASE_PATH),
     gitSha: env.GIT_SHA ?? null,
     deployStatusFile: env.DEPLOY_STATUS_FILE ?? null,
+    /**
+     * Origem canônica do site, de onde saem as URLs absolutas e a regra de
+     * indexação. Nenhum domínio fica no código: trocar o endereço canônico é
+     * só mudar esta variável.
+     */
+    publicOrigin:
+      env.PUBLIC_ORIGIN === undefined
+        ? env.NODE_ENV === "development"
+          ? LOCAL_PUBLIC_ORIGIN
+          : null
+        : parseOrigin(env.PUBLIC_ORIGIN),
+    /** Só o valor exato `true` libera a indexação; o padrão é não indexar. */
+    allowIndexing: env.ALLOW_INDEXING === "true",
   }));
 
 /**

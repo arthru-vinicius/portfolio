@@ -87,6 +87,10 @@ function startContainer(deployDir: string): void {
       "DATABASE_PATH=/data/portfolio.db",
       "--env",
       `PUBLIC_ORIGIN=${baseURL}`,
+      // O servidor deixa a indexação desligada até o lançamento. Aqui ela fica
+      // liberada para os testes verem os dois lados da regra.
+      "--env",
+      "ALLOW_INDEXING=true",
       "--env",
       "ADMIN_HOSTS=127.0.0.1",
       "--env",
