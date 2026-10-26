@@ -70,9 +70,9 @@ O `package.json` é a fonte da verdade; estes são os principais.
    colado no chat e não rodam `admin:hash-password` com uma senha real.
 6. **Painel seguro por padrão.** Toda Server Action e todo route handler do painel conferem a
    sessão por conta própria (`requireAdmin()`); layout e proxy não bastam. Server Action nova
-   entra na lista de `src/app/admin/server-actions.test.ts`, que chama cada uma sem sessão. O
-   painel só responde nos hosts permitidos e falha fechado: sem segredo configurado, ele não
-   abre.
+   entra na lista de `src/app/admin/server-actions.test.ts`, e route handler novo, na de
+   `src/app/admin/route-handlers.test.ts`; os dois chamam cada um sem sessão. O painel só
+   responde nos hosts permitidos e falha fechado: sem segredo configurado, ele não abre.
 7. **Antes de dizer que terminou:** `typecheck`, `lint`, `test`, `build` e `docker:build`;
    para mudança no servidor, rode o container local e o e2e. Mudança visual é conferida no
    navegador, no celular e no computador, nos dois idiomas e nos dois temas. **Diga o que não
