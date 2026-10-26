@@ -1,39 +1,35 @@
 import type { Metadata } from "next";
-import type { DatabaseSync } from "node:sqlite";
 
-import { NewerDocumentVersionError } from "@/content/migrations";
+import { cardClass, secondaryButtonClass } from "@/components/admin/styles";
 import { adminMessages } from "@/i18n/admin";
 import { formatDateTime } from "@/i18n/format";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getDatabase } from "@/lib/db/database";
-import { readDraft } from "@/lib/db/draft";
 import { listRevisions } from "@/lib/db/revisions";
+
+import { draftParts, versionOf } from "./draft-parts";
+import { loadEditableDraft } from "./editable-draft";
+import { ImportForm } from "./import-form";
 
 export const metadata: Metadata = { title: adminMessages.home.title };
 
 const messages = adminMessages.home;
 
-function describeDraft(db: DatabaseSync): string {
-  try {
-    const draft = readDraft(db);
-    return draft === null
-      ? messages.noDraft
-      : messages.draftSavedAt(formatDateTime(draft.updatedAt, "pt-BR"));
-  } catch (error) {
-    // Depois de um rollback do deploy, o rascunho pode ser de uma versão do
-    // schema que este código não conhece. Ele fica intacto no banco.
-    if (error instanceof NewerDocumentVersionError) {
-      return messages.draftFromNewerVersion;
-    }
-    throw error;
-  }
-}
-
-/** Visão geral do conteúdo: o rascunho e a última publicação. */
+/** Visão geral do conteúdo: o rascunho, a última publicação e a cópia de segurança. */
 export default async function AdminHomePage() {
   await requireAdmin();
-  const db = getDatabase();
-  const [latest] = listRevisions(db, 1);
+  const [latest] = listRevisions(getDatabase(), 1);
+  // `null` quando o rascunho é de uma versão mais nova do painel.
+  const draft = loadEditableDraft();
+  const hasDraft = draft === null || draft.updatedAt !== null;
+  const hasContent = hasDraft || latest !== undefined;
+
+  let draftText: string = messages.noDraft;
+  if (draft === null) {
+    draftText = messages.draftFromNewerVersion;
+  } else if (draft.updatedAt !== null) {
+    draftText = messages.draftSavedAt(formatDateTime(draft.updatedAt, "pt-BR"));
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -43,7 +39,7 @@ export default async function AdminHomePage() {
       <dl className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-control p-4">
           <dt className="font-medium">{messages.draft}</dt>
-          <dd className="mt-1 text-muted">{describeDraft(db)}</dd>
+          <dd className="mt-1 text-muted">{draftText}</dd>
         </div>
         <div className="rounded-lg border border-control p-4">
           <dt className="font-medium">{messages.published}</dt>
@@ -57,6 +53,33 @@ export default async function AdminHomePage() {
           </dd>
         </div>
       </dl>
+      {!hasContent && <p>{messages.gettingStarted}</p>}
+
+      <section
+        aria-labelledby="backup-heading"
+        className={`${cardClass} flex flex-col gap-5`}
+      >
+        <div className="flex flex-col gap-1">
+          <h2 id="backup-heading" className="text-lg font-semibold">
+            {adminMessages.backup.heading}
+          </h2>
+          <p className="text-muted">{adminMessages.backup.description}</p>
+        </div>
+        {hasContent && (
+          <div>
+            {/* Download, e não navegação: um link comum, fora do roteador. */}
+            <a href="/admin/export" download className={secondaryButtonClass}>
+              {adminMessages.backup.export}
+            </a>
+          </div>
+        )}
+        {draft !== null && (
+          <ImportForm
+            version={versionOf(draftParts.document(draft.document))}
+            replacesDraft={hasDraft}
+          />
+        )}
+      </section>
     </div>
   );
 }

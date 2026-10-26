@@ -10,6 +10,13 @@ export const adminMessages = {
   unavailable:
     "O painel está indisponível no momento. Tente de novo mais tarde.",
   logout: "Sair",
+  nav: {
+    label: "Seções do painel",
+    home: "Visão geral",
+    profile: "Perfil",
+    blocks: "Blocos",
+    resume: "Currículo",
+  },
   login: {
     title: "Entrar",
     heading: "Entrar no painel",
@@ -38,5 +45,223 @@ export const adminMessages = {
     nothingPublished: "Nada foi publicado ainda.",
     publishedAt: (revision: number, time: string) =>
       `Revisão ${revision}, publicada em ${time}.`,
+    gettingStarted:
+      "Para começar, importe um arquivo de conteúdo ou preencha o perfil e os blocos.",
+  },
+  backup: {
+    heading: "Cópia de segurança",
+    description:
+      "O arquivo exportado é a cópia do conteúdo fora do servidor. Exporte depois de mudanças grandes.",
+    export: "Exportar conteúdo (JSON)",
+    importLabel: "Importar conteúdo (JSON)",
+    importHint:
+      "Substitui o rascunho pelo conteúdo do arquivo. O site só muda quando você publicar.",
+    importSubmit: "Importar",
+    importing: "Importando…",
+    confirmTitle: "Substituir o rascunho?",
+    confirmMessage: (fileName: string) =>
+      `O rascunho atual será trocado pelo conteúdo de ${fileName}. O que está publicado continua no ar.`,
+    confirm: "Substituir rascunho",
+    confirmFirstTitle: "Importar o conteúdo?",
+    confirmFirstMessage: (fileName: string) =>
+      `O conteúdo de ${fileName} vira o rascunho. O site só muda quando você publicar.`,
+    confirmFirst: "Importar",
+    imported: "Conteúdo importado. Revise o rascunho antes de publicar.",
+    noFile: "Escolha um arquivo JSON.",
+    tooLarge: "O arquivo passa de 1 MB, mais do que cabe num portfólio.",
+    invalidJson: "O arquivo não é um JSON válido.",
+    invalidDocument: "O arquivo não segue o formato do conteúdo do portfólio:",
+    newerVersion:
+      "O arquivo foi exportado por uma versão mais recente do painel e não pode ser importado nesta.",
+    moreIssues: (count: number) =>
+      `E mais ${count} ${count === 1 ? "problema" : "problemas"}.`,
+  },
+  editor: {
+    unsaved: "Alterações não salvas",
+    saving: "Salvando…",
+    savedAt: (time: string) => `Salvo às ${time}`,
+    save: "Salvar",
+    discard: "Descartar alterações",
+    discardTitle: "Descartar as alterações?",
+    discardMessage: "A página volta a mostrar o que está salvo.",
+    discardConfirm: "Descartar",
+    conflict:
+      "O conteúdo foi alterado em outra aba ou janela. Recarregue a página para continuar; o que foi feito aqui não foi salvo.",
+    reload: "Recarregar",
+    invalid: "Corrija os campos marcados para salvar.",
+    newerVersion:
+      "O rascunho foi salvo por uma versão mais recente do painel. Recarregue a página.",
+    unexpected:
+      "Não foi possível salvar agora. Confira a conexão e tente de novo.",
+    leaveTitle: "Sair sem salvar?",
+    leaveMessage: "As alterações desta página ainda não foram salvas.",
+    leaveConfirm: "Sair sem salvar",
+    stay: "Continuar editando",
+    cancel: "Cancelar",
+    moveUp: (name: string) => `Mover ${name} para cima`,
+    moveDown: (name: string) => `Mover ${name} para baixo`,
+    moved: (name: string, position: number, total: number) =>
+      `${name} está agora na posição ${position} de ${total}.`,
+    duplicate: "Duplicar",
+    duplicateLabel: (name: string) => `Duplicar ${name}`,
+    remove: "Remover",
+    removeLabel: (name: string) => `Remover ${name}`,
+    removeTitle: (name: string) => `Remover ${name}?`,
+    removeItemMessage:
+      "O item sai do rascunho quando você salvar. O que está publicado continua no ar até a próxima publicação.",
+    edit: "Editar",
+    editLabel: (name: string) => `Editar ${name}`,
+    expand: (name: string) => `Abrir ${name}`,
+    collapse: (name: string) => `Fechar ${name}`,
+    visible: "Visível no site",
+    inResume: "No currículo",
+    inResumeHint: "Entra no currículo em PDF e XLSX.",
+    hidden: "Oculto no site",
+    missingTranslation: "Tradução faltando",
+    portuguese: "Português",
+    english: "Inglês",
+    markdownHint:
+      "Aceita **negrito**, *itálico*, `código`, [links](https://exemplo.com) e listas com “- ” no começo da linha. Separe os parágrafos com uma linha em branco.",
+    keywordsHint:
+      "Escreva e tecle Enter. Use a grafia do mercado, como “TypeScript” e “PostgreSQL”.",
+    keywordsAdd: "Adicionar",
+    keywordRemove: (keyword: string) => `Remover ${keyword}`,
+    keywordDuplicate: (keyword: string) => `${keyword} já está na lista.`,
+    monthPlaceholder: "AAAA-MM",
+  },
+  fields: {
+    fullName: "Nome completo",
+    fullNameHint: "Vai para o currículo.",
+    displayName: "Nome de exibição",
+    displayNameHint: "Aparece no topo do site.",
+    headline: "Título profissional",
+    location: "Local",
+    publicEmail: "E-mail público",
+    publicEmailHint:
+      "Vai para o currículo. No site, o contato é pelo formulário.",
+    phone: "Telefone",
+    phoneHint:
+      "Fica só no painel: nunca aparece no site nem no currículo público.",
+    links: "Links",
+    linkKind: "Tipo",
+    linkUrl: "Endereço",
+    linkLabel: "Nome do link",
+    addLink: "Adicionar link",
+    blockTitle: "Título no site",
+    blockTitleHint: (defaultTitle: string) =>
+      `Deixe vazio para usar “${defaultTitle}”.`,
+    body: "Texto",
+    title: "Título",
+    company: "Empresa",
+    companyUrl: "Site da empresa",
+    role: "Cargo",
+    workMode: "Modo de trabalho",
+    start: "Início",
+    end: "Fim",
+    currentJob: "É o emprego atual",
+    summary: "Resumo",
+    projectSummaryHint: "Uma frase, que aparece no cartão do projeto.",
+    highlights: "Destaques",
+    highlightsHint:
+      "Comece cada destaque por um verbo no passado. Os marcados entram no currículo.",
+    highlight: (position: number) => `Destaque ${position}`,
+    addHighlight: "Adicionar destaque",
+    technologies: "Tecnologias",
+    name: "Nome",
+    description: "Descrição",
+    repositoryUrl: "Código",
+    repositoryUrlHint: "Deixe vazio se o código não for público.",
+    websiteUrl: "Site",
+    skills: "Habilidades",
+    degree: "Curso",
+    institution: "Instituição",
+    inProgress: "Em andamento",
+    expectedEnd: "Previsão de conclusão",
+    notes: "Observações",
+    issuer: "Quem concedeu",
+    date: "Data",
+    level: "Nível",
+    resumeSummary: "Resumo profissional",
+    resumeSummaryHint:
+      "De 3 a 4 linhas, mais direto que o “Sobre”. Abre o currículo.",
+  },
+  workModes: {
+    none: "Não informar",
+    onsite: "Presencial",
+    hybrid: "Híbrido",
+    remote: "Remoto",
+  },
+  linkKinds: {
+    linkedin: "LinkedIn",
+    github: "GitHub",
+    website: "Site",
+    x: "X",
+    bluesky: "Bluesky",
+    instagram: "Instagram",
+    youtube: "YouTube",
+    other: "Outro",
+  },
+  blockTypes: {
+    about: "Sobre",
+    experience: "Experiência",
+    projects: "Projetos",
+    skills: "Habilidades",
+    education: "Formação",
+    awards: "Prêmios",
+    languages: "Idiomas",
+    text: "Texto livre",
+  },
+  items: {
+    experience: {
+      add: "Adicionar experiência",
+      untitled: "Experiência sem nome",
+    },
+    projects: { add: "Adicionar projeto", untitled: "Projeto sem nome" },
+    skills: { add: "Adicionar grupo", untitled: "Grupo sem nome" },
+    education: { add: "Adicionar curso", untitled: "Curso sem nome" },
+    awards: { add: "Adicionar prêmio", untitled: "Prêmio sem nome" },
+    languages: { add: "Adicionar idioma", untitled: "Idioma sem nome" },
+  },
+  profile: {
+    title: "Perfil",
+    heading: "Perfil",
+    intro:
+      "Quem você é e como entrar em contato. O nome de exibição e o título abrem o site.",
+    identity: "Identidade",
+    contact: "Contato",
+    private: "Só no painel",
+  },
+  blocks: {
+    title: "Blocos",
+    heading: "Blocos",
+    intro:
+      "Cada bloco é uma seção do site, nesta ordem. Um bloco oculto continua no rascunho, mas não aparece no site.",
+    empty: "Nenhum bloco ainda. Adicione o primeiro abaixo.",
+    itemCount: (total: number, visible: number) =>
+      total === 0
+        ? "Sem itens"
+        : `${total} ${total === 1 ? "item" : "itens"}, ${visible} ${visible === 1 ? "visível" : "visíveis"}`,
+    customTitle: (title: string) => `No site: “${title}”`,
+    newBlock: "Novo",
+    saveToEdit: "Salve para editar",
+    added: (name: string) =>
+      `${name} entrou no fim da lista. Salve para editar o conteúdo.`,
+    addType: "Tipo de bloco",
+    add: "Adicionar bloco",
+    removeBlockMessage: (items: number) =>
+      items === 0
+        ? "O bloco sai do rascunho quando você salvar. O que está publicado continua no ar até a próxima publicação."
+        : `O bloco e ${items === 1 ? "o item dele saem" : `os ${items} itens dele saem`} do rascunho quando você salvar. O que está publicado continua no ar até a próxima publicação.`,
+    backToList: "Blocos",
+    breadcrumb: "Caminho",
+    settings: "Bloco",
+    items: "Itens",
+    notFound: "Este bloco não existe mais no rascunho.",
+  },
+  resume: {
+    title: "Currículo",
+    heading: "Currículo",
+    intro:
+      "O currículo em PDF e XLSX sai do mesmo conteúdo do site. O que entra nele é marcado em cada item, em “No currículo”.",
   },
 } as const;

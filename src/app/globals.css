@@ -2,22 +2,34 @@
 
 /* Tokens provisórios, usados pela página em construção e pelo painel. O sistema
    de design do site (tipografia, espaçamento e o seletor de tema) entra com o
-   site público. Contraste conferido nos dois temas: texto a partir de 4,5:1 e
-   bordas de controles a partir de 3:1. */
+   site público. Contraste conferido nos dois temas, sobre o fundo e sobre a
+   superfície: texto a partir de 4,5:1 e bordas de controles a partir de 3:1. */
 @theme {
   --color-background: #ffffff;
+  --color-surface: #f5f5f5;
   --color-foreground: #171717;
   --color-muted: #525252;
   --color-control: #737373;
   --color-danger: #b42318;
+  --color-warning: #b54708;
+  --color-success: #067647;
+}
+
+/* A barra de rolagem tem o espaço reservado sempre: a página não pula para o
+   lado ao passar de uma tela curta para uma longa. */
+html {
+  scrollbar-gutter: stable;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --color-background: #0a0a0a;
+    --color-surface: #1a1a1a;
     --color-foreground: #ededed;
     --color-muted: #a3a3a3;
     --color-control: #8c8c8c;
     --color-danger: #f97066;
+    --color-warning: #fdb022;
+    --color-success: #47cd89;
   }
 }

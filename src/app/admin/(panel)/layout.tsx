@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { LogoutForm, PanelNav } from "@/components/admin/panel-nav";
+import { UnsavedChangesProvider } from "@/components/admin/unsaved-changes";
 import { adminMessages } from "@/i18n/admin";
 
 import { logout } from "./actions";
@@ -11,7 +13,7 @@ import { logout } from "./actions";
  */
 export default function PanelLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <>
+    <UnsavedChangesProvider>
       <a
         href="#main-content"
         className="sr-only rounded-md bg-foreground px-4 py-2 text-background focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
@@ -19,16 +21,12 @@ export default function PanelLayout({ children }: LayoutProps<"/admin">) {
         {adminMessages.skipToContent}
       </a>
       <header className="border-b border-control">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-3">
-          <p className="font-semibold">{adminMessages.title}</p>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="min-h-11 rounded-md px-3 py-2 font-medium underline-offset-4 outline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-foreground"
-            >
-              {adminMessages.logout}
-            </button>
-          </form>
+        <div className="mx-auto flex max-w-4xl flex-col gap-2 px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <p className="font-semibold">{adminMessages.title}</p>
+            <LogoutForm action={logout} />
+          </div>
+          <PanelNav />
         </div>
       </header>
       <main id="main-content" className="mx-auto max-w-4xl px-6 py-10">
@@ -38,6 +36,6 @@ export default function PanelLayout({ children }: LayoutProps<"/admin">) {
           {children}
         </Suspense>
       </main>
-    </>
+    </UnsavedChangesProvider>
   );
 }

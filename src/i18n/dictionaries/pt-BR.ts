@@ -11,6 +11,16 @@ export const ptBR = {
     title: "Portfólio em construção",
     body: "Este site está sendo construído. Volte em breve.",
   },
+  /** Títulos padrão das seções; cada bloco pode ter um título próprio. */
+  sections: {
+    about: "Sobre",
+    experience: "Experiência",
+    projects: "Projetos",
+    skills: "Habilidades",
+    education: "Formação",
+    awards: "Prêmios",
+    languages: "Idiomas",
+  },
 };
 
 /** Estrutura de um dicionário: as mesmas chaves em todos os idiomas. */
