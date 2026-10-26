@@ -3,7 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 
 import { NewerDocumentVersionError } from "@/content/migrations";
 import { adminMessages } from "@/i18n/admin";
-import { formatDateTime, formatTime } from "@/i18n/format";
+import { formatDateTime } from "@/i18n/format";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getDatabase } from "@/lib/db/database";
 import { readDraft } from "@/lib/db/draft";
@@ -29,22 +29,17 @@ function describeDraft(db: DatabaseSync): string {
   }
 }
 
-/** Situação do conteúdo: o rascunho e a última publicação. */
+/** Visão geral do conteúdo: o rascunho e a última publicação. */
 export default async function AdminHomePage() {
-  const session = await requireAdmin();
+  await requireAdmin();
   const db = getDatabase();
   const [latest] = listRevisions(db, 1);
 
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {messages.heading}
-        </h1>
-        <p className="mt-2 text-muted">
-          {messages.sessionUntil(formatTime(session.expiresAt, "pt-BR"))}
-        </p>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {messages.heading}
+      </h1>
       <dl className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-control p-4">
           <dt className="font-medium">{messages.draft}</dt>
