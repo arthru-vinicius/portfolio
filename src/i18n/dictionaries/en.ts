@@ -10,4 +10,13 @@ export const en: Dictionary = {
     title: "Portfolio under construction",
     body: "This site is being built. Please check back soon.",
   },
+  sections: {
+    about: "About",
+    experience: "Experience",
+    projects: "Projects",
+    skills: "Skills",
+    education: "Education",
+    awards: "Awards",
+    languages: "Languages",
+  },
 };

@@ -53,6 +53,16 @@ const SERVER_ACTIONS: Record<
     load: () => import("./(panel)/actions"),
     actions: { logout: "admin" },
   },
+  "src/app/admin/(panel)/content-actions.ts": {
+    load: () => import("./(panel)/content-actions"),
+    actions: {
+      importDocument: "admin",
+      saveBlock: "admin",
+      saveBlockList: "admin",
+      saveProfile: "admin",
+      saveResumeSettings: "admin",
+    },
+  },
 };
 
 const DIRECTIVE = /["']use server["']/g;

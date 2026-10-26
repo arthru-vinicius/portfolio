@@ -23,7 +23,9 @@ export const instant = false;
  */
 export default function AdminRootLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <html lang="pt-BR">
+    // A margem de rolagem embaixo deixa o campo em foco acima da barra fixa
+    // de salvar dos editores.
+    <html lang="pt-BR" className="scroll-pb-28">
       <body className="bg-background text-foreground antialiased">
         {children}
       </body>

@@ -65,6 +65,20 @@ O Turnstile do login usa as chaves de teste da Cloudflare, que sempre passam.
 Nenhum dos valores pode ter aspas simples nem quebra de linha. Trocar o usuário ou a senha
 também derruba as sessões abertas.
 
+**Edição do conteúdo:**
+
+- Cada parte tem a sua tela: o perfil, a lista de blocos (ordem, visibilidade, blocos novos e
+  removidos), cada bloco com os itens dele e o currículo. Os textos têm os dois idiomas lado a
+  lado, com aviso de tradução faltando.
+- Salvar grava o rascunho, que o site não mostra: as páginas leem só a revisão publicada.
+- Cada tela guarda a versão da parte que abriu. Se a mesma parte mudou em outra aba, salvar é
+  recusado, em vez de apagar a outra alteração; mudar outra parte não atrapalha.
+- Sair de uma tela com alterações não salvas pede confirmação. A ordem dos itens muda por
+  botões, que funcionam pelo teclado.
+- **Exportar e importar JSON**, na visão geral. O arquivo exportado, com os campos privados, é a
+  cópia do conteúdo fora do servidor. Importar valida o arquivo e substitui o rascunho, sem
+  publicar.
+
 **Proteções:**
 
 - O painel só responde nos hosts de `ADMIN_HOSTS`; nos outros, é 404.
@@ -74,9 +88,9 @@ também derruba as sessões abertas.
   banco e sobrevive a um deploy.
 - A senha é conferida com `scrypt` (64 MiB por tentativa), em tempo constante. Usuário e senha
   errados dão a mesma resposta.
-- O proxy faz a primeira barreira (host, configuração e sessão), e cada página e cada Server
-  Action confere a sessão de novo. Um teste mantém a lista de todas as Server Actions e chama
-  cada uma sem sessão.
+- O proxy faz a primeira barreira (host, configuração e sessão), e cada página, Server Action e
+  route handler confere a sessão de novo. Os testes mantêm a lista de todas as Server Actions e
+  dos route handlers do painel e chamam cada um sem sessão.
 - Pedidos que chegam por HTTP vão para HTTPS, e as respostas em HTTPS levam HSTS, sem
   `includeSubDomains`.
 

@@ -3,13 +3,21 @@ import type { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ZodError } from "zod";
 
+import { createEmptyDocument } from "@/content/editing";
 import { NewerDocumentVersionError } from "@/content/migrations";
 import type { PortfolioDocument } from "@/content/schema";
 
 import { portfolioFixture } from "../../../tests/fixtures/portfolio-document";
 import { createTestDatabase } from "../../../tests/support/database";
 
-import { DraftConflictError, readDraft, saveDraft } from "./draft";
+import {
+  DraftConflictError,
+  readDraft,
+  readEditableDraft,
+  saveDraft,
+  updateDraft,
+} from "./draft";
+import { insertRevision } from "./revisions";
 
 const NOW = new Date("2026-10-24T12:00:00.000Z");
 
@@ -84,5 +92,75 @@ describe("rascunho", () => {
     );
 
     expect(() => readDraft(db)).toThrow(NewerDocumentVersionError);
+  });
+});
+
+describe("rascunho editável", () => {
+  let db: DatabaseSync;
+
+  beforeEach(() => {
+    db = createTestDatabase();
+  });
+
+  afterEach(() => {
+    db.close();
+  });
+
+  it("começa vazio quando não há rascunho nem publicação", () => {
+    expect(readEditableDraft(db)).toEqual({
+      document: createEmptyDocument(),
+      lockVersion: 0,
+      updatedAt: null,
+    });
+  });
+
+  it("começa da última publicação quando não há rascunho", () => {
+    insertRevision(db, portfolioFixture, null, NOW);
+
+    expect(readEditableDraft(db)).toEqual({
+      document: portfolioFixture,
+      lockVersion: 0,
+      updatedAt: null,
+    });
+  });
+
+  it("é o rascunho, quando ele existe", () => {
+    const saved = saveDraft(db, portfolioFixture, 0, NOW);
+
+    expect(readEditableDraft(db)).toEqual(saved);
+  });
+
+  it("muda o rascunho a partir do documento editável, e cria o primeiro", () => {
+    insertRevision(db, portfolioFixture, null, NOW);
+
+    const saved = updateDraft(
+      db,
+      0,
+      (document) => ({
+        ...document,
+        profile: { ...document.profile, displayName: "Ana E." },
+      }),
+      NOW,
+    );
+
+    expect(saved.lockVersion).toBe(1);
+    expect(readDraft(db)?.document.profile).toEqual({
+      ...portfolioFixture.profile,
+      displayName: "Ana E.",
+    });
+  });
+
+  it("recusa a mudança feita sobre uma versão velha, sem gravar", () => {
+    saveDraft(db, portfolioFixture, 0, NOW);
+    let called = false;
+
+    expect(() =>
+      updateDraft(db, 0, (document) => {
+        called = true;
+        return document;
+      }),
+    ).toThrow(DraftConflictError);
+    expect(called).toBe(false);
+    expect(readDraft(db)?.lockVersion).toBe(1);
   });
 });
