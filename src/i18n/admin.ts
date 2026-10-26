@@ -8,7 +8,7 @@ export const adminMessages = {
   skipToContent: "Pular para o conteúdo",
   loading: "Carregando…",
   unavailable:
-    "O painel está indisponível: falta configuração no servidor. Confira o log.",
+    "O painel está indisponível no momento. Tente de novo mais tarde.",
   logout: "Sair",
   login: {
     title: "Entrar",
@@ -19,8 +19,7 @@ export const adminMessages = {
     submit: "Entrar",
     submitting: "Entrando…",
     invalidInput: "Preencha o usuário e a senha e conclua a verificação.",
-    turnstileRejected:
-      "A verificação de segurança não passou. Ela foi refeita; tente de novo.",
+    turnstileRejected: "A verificação de segurança falhou. Tente de novo.",
     turnstileUnavailable:
       "Não foi possível fazer a verificação de segurança agora. Tente de novo em instantes.",
     invalidCredentials: "Usuário ou senha incorretos.",
@@ -28,14 +27,13 @@ export const adminMessages = {
       `Muitas tentativas. Tente de novo em ${minutes} ${minutes === 1 ? "minuto" : "minutos"}.`,
   },
   home: {
-    title: "Situação",
-    heading: "Situação do conteúdo",
-    sessionUntil: (time: string) => `Sessão válida até ${time}.`,
+    title: "Visão geral",
+    heading: "Visão geral",
     draft: "Rascunho",
     noDraft: "Ainda não há rascunho.",
     draftSavedAt: (time: string) => `Salvo em ${time}.`,
     draftFromNewerVersion:
-      "O rascunho foi salvo por uma versão mais nova do painel e não pode ser aberto por esta. Ele continua no banco, intacto.",
+      "Este rascunho foi salvo por uma versão mais recente do painel e não abre nesta. Nada foi perdido.",
     published: "Publicado",
     nothingPublished: "Nada foi publicado ainda.",
     publishedAt: (revision: number, time: string) =>

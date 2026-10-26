@@ -100,7 +100,7 @@ test.describe("painel: respostas", () => {
 });
 
 test.describe("painel: login", () => {
-  test("entra com cookie seguro, mostra a situação e sai", async ({
+  test("entra com cookie seguro, mostra a visão geral e sai", async ({
     page,
     context,
   }) => {
@@ -191,7 +191,7 @@ test.describe("painel: login", () => {
 
 test.describe("painel: acessibilidade", () => {
   for (const colorScheme of ["light", "dark"] as const) {
-    test(`login e situação sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
+    test(`login e visão geral sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme });
