@@ -7,13 +7,30 @@ import { z } from "zod";
  */
 export const CURRENT_SCHEMA_VERSION = 1;
 
-// Limites de tamanho: barram textos acidentais na importação de JSON e no banco.
-const SHORT_TEXT = 200;
-const SENTENCE = 500;
-const LONG_TEXT = 5000;
-const LIST_LIMIT = 50;
+/**
+ * Limites de tamanho do conteúdo. Barram textos acidentais na importação de
+ * JSON e no banco, e o painel usa os mesmos números nos campos.
+ */
+export const contentLimits = {
+  /** Nomes, títulos, cargos e locais. */
+  line: 200,
+  /** Uma frase, como o resumo de um projeto ou um destaque. */
+  sentence: 500,
+  /** Texto com Markdown, como uma descrição ou o "Sobre". */
+  richText: 5000,
+  /** Uma tecnologia ou habilidade. */
+  keyword: 60,
+  /** Itens de uma lista. */
+  listItems: 50,
+  /** Links do perfil. */
+  links: 20,
+  /** Blocos do documento. */
+  blocks: 30,
+} as const;
 
-const text = (max: number) => z.string().trim().max(max);
+// As mensagens aparecem no painel, embaixo do campo, e na importação de JSON.
+const text = (max: number) =>
+  z.string().trim().max(max, `use até ${max} caracteres`);
 
 const localized = (max: number) =>
   z.object({
@@ -25,16 +42,16 @@ const localized = (max: number) =>
  * Texto curto nos dois idiomas do site: títulos, cargos e locais. O rascunho
  * aceita vazio; a publicação exige os dois idiomas.
  */
-export const localizedLineSchema = localized(SHORT_TEXT);
+export const localizedLineSchema = localized(contentLimits.line);
 
 /** Frase nos dois idiomas, como um destaque de experiência ou o resumo de um projeto. */
-export const localizedSentenceSchema = localized(SENTENCE);
+export const localizedSentenceSchema = localized(contentLimits.sentence);
 
 /**
  * Texto longo nos dois idiomas, escrito com o subconjunto de Markdown do site
- * (parágrafos, negrito, itálico, links e listas, sem HTML).
+ * (parágrafos, negrito, itálico, código, links e listas, sem HTML).
  */
-export const localizedRichTextSchema = localized(LONG_TEXT);
+export const localizedRichTextSchema = localized(contentLimits.richText);
 
 /** Mês no formato `AAAA-MM`. O site e o currículo formatam com `Intl`. */
 export const yearMonthSchema = z
@@ -42,18 +59,24 @@ export const yearMonthSchema = z
   .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "use o formato AAAA-MM");
 
 const idSchema = z.uuid();
-const urlSchema = z.httpUrl().max(500);
+const urlSchema = z
+  .httpUrl("use um endereço completo, começando com https://")
+  .max(500, "use até 500 caracteres");
+
+const listOf = <T extends z.ZodType>(
+  item: T,
+  max: number = contentLimits.listItems,
+) => z.array(item).max(max, `use até ${max} itens`);
 
 /** Palavras-chave (tecnologias, habilidades) escritas como o mercado escreve, sem repetir. */
-const keywordsSchema = z
-  .array(text(60).min(1))
-  .max(LIST_LIMIT)
-  .refine(
-    (keywords) =>
-      new Set(keywords.map((keyword) => keyword.toLowerCase())).size ===
-      keywords.length,
-    { error: "palavra-chave repetida" },
-  );
+const keywordsSchema = listOf(
+  text(contentLimits.keyword).min(1, "a etiqueta está vazia"),
+).refine(
+  (keywords) =>
+    new Set(keywords.map((keyword) => keyword.toLowerCase())).size ===
+    keywords.length,
+  { error: "palavra-chave repetida" },
+);
 
 /** Itens de lista: aparecem no site se visíveis, e no currículo se marcados. */
 const itemBase = {
@@ -90,21 +113,24 @@ export const socialLinkSchema = z
     label: text(60).optional(),
   })
   .refine((link) => link.kind !== "other" || Boolean(link.label), {
-    error: "um link do tipo other precisa de rótulo",
+    error: "dê um nome a este link",
     path: ["label"],
   });
 
 /** Perfil: quem é a pessoa e como encontrá-la. */
 export const profileSchema = z.object({
   /** Nome completo, usado no currículo. */
-  fullName: text(SHORT_TEXT),
+  fullName: text(contentLimits.line),
   /** Nome curto, usado no site. */
-  displayName: text(SHORT_TEXT),
+  displayName: text(contentLimits.line),
   headline: localizedLineSchema,
   location: localizedLineSchema,
-  links: z.array(socialLinkSchema).max(20),
+  links: listOf(socialLinkSchema, contentLimits.links),
   /** E-mail do currículo. */
-  publicEmail: z.email().max(254).optional(),
+  publicEmail: z
+    .email("use um e-mail válido")
+    .max(254, "use até 254 caracteres")
+    .optional(),
   /** Campos que nunca saem do painel (ver `toPublicDocument`). */
   private: z.object({
     phone: text(40).optional(),
@@ -115,7 +141,7 @@ export const profileSchema = z.object({
 export const experienceItemSchema = z
   .object({
     ...itemBase,
-    company: text(SHORT_TEXT),
+    company: text(contentLimits.line),
     companyUrl: urlSchema.optional(),
     role: localizedLineSchema,
     location: localizedLineSchema,
@@ -123,15 +149,13 @@ export const experienceItemSchema = z
     start: yearMonthSchema,
     end: yearMonthSchema.nullable(),
     summary: localizedRichTextSchema,
-    highlights: z
-      .array(
-        z.object({
-          id: idSchema,
-          text: localizedSentenceSchema,
-          inResume: z.boolean(),
-        }),
-      )
-      .max(LIST_LIMIT),
+    highlights: listOf(
+      z.object({
+        id: idSchema,
+        text: localizedSentenceSchema,
+        inResume: z.boolean(),
+      }),
+    ),
     technologies: keywordsSchema,
   })
   .refine(endNotBeforeStart, endNotBeforeStartError);
@@ -139,7 +163,7 @@ export const experienceItemSchema = z
 /** Um projeto. Sem `repositoryUrl` quando o código não é público. */
 export const projectItemSchema = z.object({
   ...itemBase,
-  name: text(SHORT_TEXT),
+  name: text(contentLimits.line),
   summary: localizedSentenceSchema,
   description: localizedRichTextSchema,
   technologies: keywordsSchema,
@@ -162,7 +186,7 @@ export const educationItemSchema = z
   .object({
     ...itemBase,
     degree: localizedLineSchema,
-    institution: text(SHORT_TEXT),
+    institution: text(contentLimits.line),
     location: localizedLineSchema,
     start: yearMonthSchema,
     end: yearMonthSchema.nullable(),
@@ -175,7 +199,7 @@ export const educationItemSchema = z
 export const awardItemSchema = z.object({
   ...itemBase,
   title: localizedLineSchema,
-  issuer: text(SHORT_TEXT),
+  issuer: text(contentLimits.line),
   date: yearMonthSchema,
   description: localizedRichTextSchema,
 });
@@ -193,8 +217,6 @@ const blockBase = {
   /** Substitui o título padrão do tipo de bloco. */
   title: localizedLineSchema.optional(),
 };
-
-const listOf = <T extends z.ZodType>(item: T) => z.array(item).max(LIST_LIMIT);
 
 /**
  * Um bloco do site. A ordem do array de blocos é a ordem no site, e o design de
@@ -259,7 +281,7 @@ export const resumeSettingsSchema = z.object({
 export const basePortfolioDocumentSchema = z.object({
   schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   profile: profileSchema,
-  blocks: z.array(blockSchema).max(30),
+  blocks: listOf(blockSchema, contentLimits.blocks),
   resume: resumeSettingsSchema,
 });
 

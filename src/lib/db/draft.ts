@@ -2,12 +2,14 @@ import type { DatabaseSync } from "node:sqlite";
 
 import { z } from "zod";
 
+import { createEmptyDocument } from "@/content/editing";
 import { migrateDocument } from "@/content/migrations";
 import {
   portfolioDocumentSchema,
   type PortfolioDocument,
 } from "@/content/schema";
 
+import { readLatestRevision } from "./revisions";
 import { withTransaction } from "./transaction";
 
 /** O rascunho de trabalho do painel. */
@@ -17,6 +19,14 @@ export type Draft = {
   lockVersion: number;
   /** Hora do último salvamento, em ISO 8601 (UTC). */
   updatedAt: string;
+};
+
+/**
+ * O documento que o painel edita. Antes do primeiro salvamento, `lockVersion`
+ * é `0` e `updatedAt` é `null`.
+ */
+export type EditableDraft = Omit<Draft, "updatedAt"> & {
+  updatedAt: string | null;
 };
 
 /**
@@ -114,4 +124,54 @@ export function saveDraft(
 
     return { document: valid, lockVersion, updatedAt };
   });
+}
+
+/**
+ * Lê o documento que o painel edita: o rascunho, se houver; senão, uma cópia da
+ * última revisão publicada; senão, um documento vazio. Nos dois últimos casos,
+ * o primeiro salvamento cria o rascunho.
+ *
+ * @param db - Conexão aberta e migrada.
+ * @returns O documento e a `lockVersion` a devolver ao salvar.
+ * @throws {NewerDocumentVersionError} Se o rascunho foi gravado por uma versão
+ *   mais nova do schema.
+ */
+export function readEditableDraft(db: DatabaseSync): EditableDraft {
+  const draft = readDraft(db);
+  if (draft !== null) {
+    return draft;
+  }
+  return {
+    document: readLatestRevision(db)?.document ?? createEmptyDocument(),
+    lockVersion: 0,
+    updatedAt: null,
+  };
+}
+
+/**
+ * Muda o rascunho a partir do documento que o painel tinha aberto, desde que
+ * nada tenha mudado nesse meio-tempo.
+ *
+ * @param db - Conexão aberta e migrada.
+ * @param expectedLockVersion - `lockVersion` que o painel leu.
+ * @param change - Recebe o documento atual e devolve o novo, sem alterar o
+ *   recebido.
+ * @param now - Hora do salvamento; os testes fixam o valor.
+ * @returns O rascunho salvo.
+ * @throws {DraftConflictError} Se o rascunho mudou desde a leitura.
+ * @throws {z.ZodError} Se o documento novo não seguir o schema.
+ * @throws {NewerDocumentVersionError} Se o rascunho foi gravado por uma versão
+ *   mais nova do schema.
+ */
+export function updateDraft(
+  db: DatabaseSync,
+  expectedLockVersion: number,
+  change: (document: PortfolioDocument) => PortfolioDocument,
+  now: Date = new Date(),
+): Draft {
+  const current = readEditableDraft(db);
+  if (current.lockVersion !== expectedLockVersion) {
+    throw new DraftConflictError(expectedLockVersion);
+  }
+  return saveDraft(db, change(current.document), expectedLockVersion, now);
 }
