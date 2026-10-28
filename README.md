@@ -75,9 +75,11 @@ também derruba as sessões abertas.
   recusado, em vez de apagar a outra alteração; mudar outra parte não atrapalha.
 - Sair de uma tela com alterações não salvas pede confirmação. A ordem dos itens muda por
   botões, que funcionam pelo teclado.
-- **Exportar e importar JSON**, na visão geral. O arquivo exportado, com os campos privados, é a
-  cópia do conteúdo fora do servidor. Importar valida o arquivo e substitui o rascunho, sem
-  publicar.
+- **Exportar e importar em YAML**, na visão geral. O arquivo exportado, com os campos privados,
+  é a cópia do conteúdo fora do servidor, e dá para editá-lo à mão: os textos de várias linhas
+  ficam em bloco literal (`|`), e um item novo pode ficar sem `id`, que ele ganha na importação.
+  Importar aceita YAML ou JSON, valida o arquivo e substitui o rascunho, sem publicar. O leitor
+  usa o YAML 1.2 padrão e recusa tags próprias, alias e mais de um documento por arquivo.
 
 **Proteções:**
 

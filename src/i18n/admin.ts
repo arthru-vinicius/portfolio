@@ -52,10 +52,10 @@ export const adminMessages = {
     heading: "Cópia de segurança",
     description:
       "O arquivo exportado é a cópia do conteúdo fora do servidor. Exporte depois de mudanças grandes.",
-    export: "Exportar conteúdo (JSON)",
-    importLabel: "Importar conteúdo (JSON)",
+    export: "Exportar conteúdo (YAML)",
+    importLabel: "Importar conteúdo (YAML ou JSON)",
     importHint:
-      "Substitui o rascunho pelo conteúdo do arquivo. O site só muda quando você publicar.",
+      "Substitui o rascunho pelo conteúdo do arquivo. Item escrito sem id ganha um. O site só muda quando você publicar.",
     importSubmit: "Importar",
     importing: "Importando…",
     confirmTitle: "Substituir o rascunho?",
@@ -67,9 +67,17 @@ export const adminMessages = {
       `O conteúdo de ${fileName} vira o rascunho. O site só muda quando você publicar.`,
     confirmFirst: "Importar",
     imported: "Conteúdo importado. Revise o rascunho antes de publicar.",
-    noFile: "Escolha um arquivo JSON.",
+    noFile: "Escolha um arquivo YAML ou JSON.",
     tooLarge: "O arquivo passa de 1 MB, mais do que cabe num portfólio.",
-    invalidJson: "O arquivo não é um JSON válido.",
+    unreadable: (line?: number) =>
+      line === undefined
+        ? "O arquivo não é um YAML válido."
+        : `O arquivo não é um YAML válido. Confira a linha ${line}.`,
+    fileHeader: [
+      "Conteúdo do portfólio, exportado pelo painel. Tem os campos privados, como o telefone:",
+      "não publique este arquivo. Para voltar com ele, use Importar, na visão geral do painel.",
+      "Item novo pode ficar sem id: ele ganha um na importação.",
+    ],
     invalidDocument: "O arquivo não segue o formato do conteúdo do portfólio:",
     newerVersion:
       "O arquivo foi exportado por uma versão mais recente do painel e não pode ser importado nesta.",

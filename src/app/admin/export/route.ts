@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import type { NextRequest } from "next/server";
 
+import { serializeContentFile } from "@/content/content-file";
 import { NewerDocumentVersionError } from "@/content/migrations";
 import type { PortfolioDocument } from "@/content/schema";
+import { adminMessages } from "@/i18n/admin";
 import { formatIsoDate } from "@/i18n/format";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getDatabase } from "@/lib/db/database";
@@ -20,7 +22,7 @@ function findExport(revisionParam: string | null): Export | null {
       ? null
       : {
           document: revision.document,
-          fileName: `portfolio-revisao-${revision.id}.json`,
+          fileName: `portfolio-revisao-${revision.id}.yaml`,
         };
   }
 
@@ -28,7 +30,7 @@ function findExport(revisionParam: string | null): Export | null {
   if (draft !== null) {
     return {
       document: draft.document,
-      fileName: `portfolio-rascunho-${formatIsoDate()}.json`,
+      fileName: `portfolio-rascunho-${formatIsoDate()}.yaml`,
     };
   }
   const latest = readLatestRevision(db);
@@ -36,12 +38,12 @@ function findExport(revisionParam: string | null): Export | null {
     ? null
     : {
         document: latest.document,
-        fileName: `portfolio-revisao-${latest.id}.json`,
+        fileName: `portfolio-revisao-${latest.id}.yaml`,
       };
 }
 
 /**
- * Baixa o conteúdo em JSON, com os campos privados: é a cópia de segurança do
+ * Baixa o conteúdo em YAML, com os campos privados: é a cópia de segurança do
  * painel, e o arquivo volta pelo Importar.
  *
  * - Sem parâmetro: o rascunho, ou a última revisão publicada se ainda não há
@@ -52,7 +54,7 @@ function findExport(revisionParam: string | null): Export | null {
  * por uma versão mais nova do painel (depois de um rollback do deploy).
  *
  * @param request - O pedido.
- * @returns O arquivo JSON, para baixar.
+ * @returns O arquivo YAML, para baixar.
  */
 export async function GET(request: NextRequest): Promise<Response> {
   await requireAdmin();
@@ -77,9 +79,14 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
 
   console.info(`[admin] conteúdo exportado: ${found.fileName}`);
-  return new Response(`${JSON.stringify(found.document, null, 2)}\n`, {
+  const file = serializeContentFile(
+    found.document,
+    adminMessages.backup.fileHeader,
+  );
+  return new Response(file, {
     headers: {
-      "Content-Type": "application/json; charset=utf-8",
+      // O tipo registrado para YAML (RFC 9512).
+      "Content-Type": "application/yaml; charset=utf-8",
       "Content-Disposition": `attachment; filename="${found.fileName}"`,
       "Cache-Control": "no-store",
     },

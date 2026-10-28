@@ -2,6 +2,7 @@ import type { DatabaseSync } from "node:sqlite";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { serializeContentFile } from "@/content/content-file";
 import { createBlock, createEmptyDocument } from "@/content/editing";
 import type { Block, PortfolioDocument } from "@/content/schema";
 import { SESSION_COOKIE_NAME, createSessionToken } from "@/lib/auth/session";
@@ -338,23 +339,40 @@ describe("saveResumeSettings", () => {
 });
 
 describe("importDocument", () => {
-  it("troca o rascunho pelo documento do arquivo", async () => {
+  it("troca o rascunho pelo documento do arquivo YAML", async () => {
     const current = { ...copy(), blocks: [] };
     saveDraft(state.db, current, 0);
 
     const result = await importDocument({
       version: versionOf(current),
-      json: JSON.stringify(portfolioFixture),
+      text: serializeContentFile(portfolioFixture),
     });
 
     expect(result).toMatchObject({ ok: true, saved: null });
     expect(readDraft(state.db)?.document).toEqual(portfolioFixture);
   });
 
-  it("recusa o que não é JSON", async () => {
+  it("aceita a cópia antiga, em JSON", async () => {
+    const current = { ...copy(), blocks: [] };
+    saveDraft(state.db, current, 0);
+
     await expect(
-      importDocument({ version: "", json: "{ isto não é json" }),
-    ).resolves.toEqual({ ok: false, reason: "invalid-json" });
+      importDocument({
+        version: versionOf(current),
+        text: JSON.stringify(portfolioFixture),
+      }),
+    ).resolves.toMatchObject({ ok: true });
+    expect(readDraft(state.db)?.document).toEqual(portfolioFixture);
+  });
+
+  it("recusa o que não é YAML, com a linha do problema", async () => {
+    await expect(
+      importDocument({ version: "", text: "a:\n  b: 1\n c: 2\n" }),
+    ).resolves.toEqual({ ok: false, reason: "unreadable", line: 3 });
+    await expect(
+      importDocument({ version: "", text: "a: &x [1]\nb: *x\n" }),
+    ).resolves.toEqual({ ok: false, reason: "unreadable" });
+    expect(readDraft(state.db)).toBeNull();
   });
 
   it("aponta os problemas com o caminho do documento inteiro", async () => {
@@ -366,7 +384,7 @@ describe("importDocument", () => {
     const index = document.blocks.indexOf(experience);
 
     await expect(
-      importDocument({ version: "", json: JSON.stringify(document) }),
+      importDocument({ version: "", text: JSON.stringify(document) }),
     ).resolves.toEqual({
       ok: false,
       reason: "invalid",
@@ -384,7 +402,7 @@ describe("importDocument", () => {
     await expect(
       importDocument({
         version: "",
-        json: JSON.stringify({ ...portfolioFixture, schemaVersion: 99 }),
+        text: JSON.stringify({ ...portfolioFixture, schemaVersion: 99 }),
       }),
     ).resolves.toEqual({ ok: false, reason: "newer-version" });
   });
@@ -396,7 +414,7 @@ describe("importDocument", () => {
     await expect(
       importDocument({
         version: opened,
-        json: JSON.stringify(portfolioFixture),
+        text: JSON.stringify(portfolioFixture),
       }),
     ).resolves.toEqual({ ok: false, reason: "conflict" });
   });

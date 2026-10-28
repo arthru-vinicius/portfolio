@@ -23,11 +23,12 @@ export type SaveResult<T> =
   | { ok: false; reason: "invalid"; issues: FieldIssue[] };
 
 /**
- * Resposta da importação de JSON. Além das recusas do salvamento, o arquivo
- * pode nem ser JSON (`invalid-json`).
+ * Resposta da importação do arquivo de conteúdo. Além das recusas do
+ * salvamento, o arquivo pode nem ser YAML válido (`unreadable`); `line` é a
+ * linha do primeiro problema, quando se sabe.
  */
 export type ImportResult =
-  SaveResult<null> | { ok: false; reason: "invalid-json" };
+  SaveResult<null> | { ok: false; reason: "unreadable"; line?: number };
 
 /**
  * Converte os problemas de um `ZodError` em caminhos de campo.
