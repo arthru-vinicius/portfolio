@@ -1,0 +1,170 @@
+/* Sistema visual do site público (direção "Estúdio", D-050): quase preto com
+   verde, títulos grandes com degradê e efeitos que não disputam com o texto.
+
+   Os tokens ficam na classe `site` (o <html> do site e a pré-visualização do
+   painel) e seguem o tema: o do sistema, ou o escolhido no botão, que grava
+   `data-theme` no <html>. Contraste conferido nos dois temas: texto a partir de
+   4,5:1 sobre o fundo e sobre os cartões. */
+
+.site {
+  --site-page: #f5f9f7;
+  --site-card: #ffffff;
+  --site-card-2: #e9f2ee;
+  --site-line: #d5e3dc;
+  --site-ink: #0b1410;
+  --site-ink-muted: #4b5d54;
+  --site-accent: #047857;
+  --site-accent-2: #0e7490;
+  --site-on-accent: #ffffff;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]).site,
+  :root:not([data-theme="light"]) .site {
+    --site-page: #060908;
+    --site-card: #0d1411;
+    --site-card-2: #121c18;
+    --site-line: #1d2a24;
+    --site-ink: #eef5f1;
+    --site-ink-muted: #93a39b;
+    --site-accent: #34d399;
+    --site-accent-2: #2dd4bf;
+    --site-on-accent: #03140c;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"].site,
+:root[data-theme="dark"] .site {
+  --site-page: #060908;
+  --site-card: #0d1411;
+  --site-card-2: #121c18;
+  --site-line: #1d2a24;
+  --site-ink: #eef5f1;
+  --site-ink-muted: #93a39b;
+  --site-accent: #34d399;
+  --site-accent-2: #2dd4bf;
+  --site-on-accent: #03140c;
+  color-scheme: dark;
+}
+
+/* O cabeçalho fixo cobre o topo: a rolagem até uma âncora para abaixo dele. */
+html.site {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
+/* Texto com o degradê do acento. */
+.site-gradient {
+  background: linear-gradient(90deg, var(--site-accent), var(--site-accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Linha curta antes dos rótulos de seção ("—— 13 projetos"). */
+.site-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 2rem;
+  height: 1px;
+  margin-right: 0.75rem;
+  vertical-align: middle;
+  background: currentColor;
+}
+
+/* Brilho verde atrás do topo, do lado do título. */
+.site-hero-glow {
+  background: radial-gradient(
+    60% 55% at 25% 30%,
+    color-mix(in srgb, var(--site-accent) 14%, transparent),
+    transparent 70%
+  );
+}
+
+/* Cartões: a borda ganha o acento e o cartão sobe um pouco no hover. */
+.site-card {
+  transition:
+    border-color 0.25s,
+    transform 0.25s;
+}
+.site-card:hover {
+  border-color: color-mix(in srgb, var(--site-accent) 55%, var(--site-line));
+  transform: translateY(-2px);
+}
+
+/* Ponto do logotipo, aceso. */
+.site-dot {
+  box-shadow: 0 0 12px var(--site-accent);
+}
+
+/* Faixa das habilidades, correndo devagar; para no hover e no foco. */
+.site-marquee-track {
+  animation: site-marquee 60s linear infinite;
+}
+.site-marquee:hover .site-marquee-track,
+.site-marquee:focus-within .site-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes site-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Texto do painel em Markdown: parágrafos, listas, ênfase, código e links. */
+.site-prose > * + * {
+  margin-top: 1em;
+}
+.site-prose ul {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+.site-prose ol {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+.site-prose li + li {
+  margin-top: 0.4em;
+}
+.site-prose li::marker {
+  color: var(--site-accent);
+}
+.site-prose strong {
+  color: var(--site-ink);
+  font-weight: 700;
+}
+.site-prose a {
+  color: var(--site-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.site-prose code {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: var(--site-card-2);
+}
+
+/* Barra de progresso da leitura, no topo. */
+.site-progress {
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--site-accent), var(--site-accent-2));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.site {
+    scroll-behavior: auto;
+  }
+  .site-card,
+  .site-card:hover {
+    transition: none;
+    transform: none;
+  }
+  .site-marquee-track {
+    animation: none;
+  }
+}

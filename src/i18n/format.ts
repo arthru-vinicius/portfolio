@@ -30,6 +30,23 @@ export function formatTime(value: Date | string, locale: Locale): string {
 }
 
 /**
+ * Formata um mês do conteúdo (`AAAA-MM`), como o início de uma experiência.
+ *
+ * @param yearMonth - O mês, no formato `AAAA-MM`.
+ * @param locale - Idioma da formatação.
+ * @returns Por exemplo, `out. de 2025` em pt-BR e `Oct 2025` em inglês.
+ */
+export function formatYearMonth(yearMonth: string, locale: Locale): string {
+  const [year = 0, month = 1] = yearMonth.split("-").map(Number);
+  // Meio do mês e em UTC: nenhum fuso leva a data para o mês vizinho.
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, 15)));
+}
+
+/**
  * Formata a data de hoje como `AAAA-MM-DD`, no fuso do site. Serve para nomear
  * arquivos exportados.
  *

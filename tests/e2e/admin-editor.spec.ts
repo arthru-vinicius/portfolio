@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { parse, stringify } from "yaml";
 
 import { adminMessages } from "../../src/i18n/admin";
+import { ptBR } from "../../src/i18n/dictionaries/pt-BR";
 import {
   FIXTURE_PHONE,
   portfolioFixture,
@@ -260,6 +261,28 @@ test("publica o rascunho depois de confirmar", async ({ page }) => {
   await expect(page.getByText(/^Revisão \d+, publicada em/)).toBeVisible();
 });
 
+test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
+  const title = page.getByRole("heading", { level: 1 });
+  await page.goto("/pt");
+  await expect(title).toContainText(`Ana Publicada ${test.info().retry}`);
+  await expect(title).toContainText("Desenvolvedora Full Stack");
+  await expect(
+    page.getByRole("heading", { level: 2, name: ptBR.sections.experience }),
+  ).toBeVisible();
+  // O que está oculto no painel não vai para o site.
+  await expect(page.getByText("Projeto Arquivado")).toHaveCount(0);
+
+  // A escolha do tema vale também depois de recarregar.
+  await page.getByRole("button", { name: /Trocar para: Tema claro$/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  await page.getByRole("link", { name: ptBR.language.switchTo }).click();
+  await expect(page).toHaveURL(/\/en$/);
+  await expect(title).toContainText("Full Stack Developer");
+});
+
 test("aponta o que falta publicar e restaura a revisão do histórico", async ({
   page,
 }) => {
@@ -302,6 +325,20 @@ test("aponta o que falta publicar e restaura a revisão do histórico", async ({
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
+  test(`site e pré-visualização sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    for (const path of ["/pt", "/en", "/admin/preview/pt"]) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      expect(
+        (await new AxeBuilder({ page }).analyze()).violations,
+        path,
+      ).toEqual([]);
+    }
+  });
+
   test(`telas de edição sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
     page,
   }) => {

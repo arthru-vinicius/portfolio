@@ -29,10 +29,11 @@ function request(
     method?: string;
     cookie?: string;
     protocol?: string;
+    headers?: Record<string, string>;
   } = {},
 ): NextRequest {
   const host = options.host ?? "portfolio.example.com";
-  const headers = new Headers({ host });
+  const headers = new Headers({ host, ...options.headers });
   if (options.cookie !== undefined) {
     headers.set("cookie", `portfolio-admin=${options.cookie}`);
   }
@@ -63,12 +64,12 @@ describe("proxy", () => {
 
   describe("indexação", () => {
     it("deixa o host canônico indexável quando a indexação está liberada", () => {
-      expect(proxy(request("/")).headers.get("x-robots-tag")).toBeNull();
+      expect(proxy(request("/pt")).headers.get("x-robots-tag")).toBeNull();
     });
 
     it("pede para não indexar os outros hosts", () => {
       expect(
-        proxy(request("/", { host: "example.com" })).headers.get(
+        proxy(request("/pt", { host: "example.com" })).headers.get(
           "x-robots-tag",
         ),
       ).toBe("noindex");
@@ -77,14 +78,54 @@ describe("proxy", () => {
     it("pede para não indexar nem o canônico com a indexação desligada", () => {
       env.server.allowIndexing = false;
 
-      expect(proxy(request("/")).headers.get("x-robots-tag")).toBe("noindex");
+      expect(proxy(request("/pt")).headers.get("x-robots-tag")).toBe("noindex");
     });
 
     it("só acrescenta cabeçalhos nas páginas do site, sem redirecionar", () => {
-      const response = proxy(request("/", { host: "example.com" }));
+      const response = proxy(request("/pt", { host: "example.com" }));
 
       expect(response.headers.get("x-middleware-next")).toBe("1");
       expect(response.headers.get("location")).toBeNull();
+    });
+  });
+
+  describe("idioma na raiz", () => {
+    it("leva a raiz ao idioma do navegador, no mesmo host, sem guardar em cache", () => {
+      const english = proxy(
+        request("/?utm=1", {
+          protocol: "https",
+          headers: { "accept-language": "en-GB,en;q=0.9,pt;q=0.5" },
+        }),
+      );
+
+      expect(english.status).toBe(307);
+      expect(english.headers.get("location")).toBe(
+        "https://portfolio.example.com/en?utm=1",
+      );
+      expect(english.headers.get("vary")).toBe("Accept-Language");
+    });
+
+    it("usa o português quando o navegador não pede um idioma do site", () => {
+      for (const header of [undefined, "fr-FR,de;q=0.8", "pt-PT"]) {
+        const response = proxy(
+          request(
+            "/",
+            header === undefined
+              ? {}
+              : { headers: { "accept-language": header } },
+          ),
+        );
+
+        expect(response.headers.get("location")).toBe(
+          "https://portfolio.example.com/pt",
+        );
+      }
+    });
+
+    it("não redireciona os caminhos que já têm idioma", () => {
+      for (const path of ["/pt", "/en"]) {
+        expect(proxy(request(path)).headers.get("location")).toBeNull();
+      }
     });
   });
 
@@ -99,7 +140,7 @@ describe("proxy", () => {
     });
 
     it("manda HSTS, sem includeSubDomains, nas respostas em HTTPS", () => {
-      for (const path of ["/", "/admin/login"]) {
+      for (const path of ["/", "/pt", "/admin/login"]) {
         expect(
           proxy(request(path, { protocol: "https" })).headers.get(
             "strict-transport-security",
@@ -109,7 +150,7 @@ describe("proxy", () => {
     });
 
     it("não mexe no pedido sem X-Forwarded-Proto, como o healthcheck de dentro do container", () => {
-      const response = proxy(request("/"));
+      const response = proxy(request("/pt"));
 
       expect(response.status).toBe(200);
       expect(response.headers.get("strict-transport-security")).toBeNull();
@@ -119,7 +160,7 @@ describe("proxy", () => {
       env.server.publicOrigin = "http://127.0.0.1:3100";
 
       const response = proxy(
-        request("/", { host: "127.0.0.1:3100", protocol: "http" }),
+        request("/pt", { host: "127.0.0.1:3100", protocol: "http" }),
       );
 
       expect(response.headers.get("location")).toBeNull();

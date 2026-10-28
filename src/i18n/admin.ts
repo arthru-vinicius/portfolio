@@ -82,6 +82,17 @@ export const adminMessages = {
     unexpected:
       "Não foi possível publicar agora. Confira a conexão e tente de novo.",
   },
+  preview: {
+    title: "Pré-visualização",
+    links: "Pré-visualizar o rascunho:",
+    portuguese: "em português",
+    english: "em inglês",
+    banner:
+      "Pré-visualização do rascunho: o site só mostra isto depois de publicar.",
+    back: "Voltar ao painel",
+    switchToPortuguese: "Ver em português",
+    switchToEnglish: "Ver em inglês",
+  },
   problems: {
     profile: "Perfil",
     resume: "Currículo",
