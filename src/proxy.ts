@@ -6,6 +6,7 @@ import {
   adminUrl,
 } from "@/lib/auth/request";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
+import { localePaths, negotiateLocale } from "@/i18n/config";
 import { getAdminEnv, getServerEnv } from "@/lib/env";
 import { isAllowedHost } from "@/lib/hosts";
 import { isIndexable } from "@/lib/indexing";
@@ -105,7 +106,21 @@ export function proxy(request: NextRequest): NextResponse {
 
   const host = request.headers.get("host");
   let response: NextResponse;
-  if (isAdminPath(pathname)) {
+  if (pathname === "/") {
+    // A raiz não tem conteúdo próprio: leva ao idioma do navegador. O
+    // redirecionamento é temporário e varia com o Accept-Language, para
+    // nenhum cache guardar a escolha de um visitante para outro.
+    const locale = negotiateLocale(request.headers.get("accept-language"));
+    const base =
+      host !== null && publicOrigin !== null
+        ? `${new URL(publicOrigin).protocol}//${host}`
+        : request.nextUrl.origin;
+    response = NextResponse.redirect(
+      new URL(`/${localePaths[locale]}${search}`, base),
+      307,
+    );
+    response.headers.set("Vary", "Accept-Language");
+  } else if (isAdminPath(pathname)) {
     response = adminResponse(request, host);
     for (const [name, value] of Object.entries(ADMIN_HEADERS)) {
       response.headers.set(name, value);

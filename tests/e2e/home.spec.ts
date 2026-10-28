@@ -3,18 +3,48 @@ import { expect, test } from "@playwright/test";
 import { en } from "../../src/i18n/dictionaries/en";
 import { ptBR } from "../../src/i18n/dictionaries/pt-BR";
 
-test.describe("página provisória", () => {
-  test("responde nos dois idiomas, com o idioma de cada trecho marcado", async ({
+// Estes testes valem com ou sem conteúdo publicado: os do editor publicam em
+// paralelo, e a página em construção vira o site no meio do caminho.
+
+test.describe("idiomas", () => {
+  test("a raiz leva ao idioma do navegador, sem cache", async ({ request }) => {
+    const portuguese = await request.get("/", { maxRedirects: 0 });
+    expect(portuguese.status()).toBe(307);
+    expect(new URL(portuguese.headers()["location"] ?? "").pathname).toBe(
+      "/pt",
+    );
+    expect(portuguese.headers()["vary"]).toBe("Accept-Language");
+
+    const english = await request.get("/", {
+      maxRedirects: 0,
+      headers: { "accept-language": "en-US,en;q=0.9" },
+    });
+    expect(new URL(english.headers()["location"] ?? "").pathname).toBe("/en");
+  });
+
+  test("cada idioma tem a sua página, marcada com o idioma", async ({
     request,
   }) => {
-    const response = await request.get("/");
-    const html = await response.text();
+    const portuguese = await request.get("/pt");
+    const english = await request.get("/en");
 
-    expect(response.status()).toBe(200);
-    expect(html).toContain('<html lang="pt-BR"');
-    expect(html).toContain(ptBR.placeholder.title);
-    expect(html).toContain('<section lang="en"');
-    expect(html).toContain(en.placeholder.title);
+    expect(portuguese.status()).toBe(200);
+    expect(await portuguese.text()).toContain('<html lang="pt-BR"');
+    expect(english.status()).toBe(200);
+    expect(await english.text()).toContain('<html lang="en"');
+  });
+
+  test("um endereço que não existe dá 404, nos dois idiomas", async ({
+    request,
+  }) => {
+    for (const path of ["/pt/nada-aqui", "/xx", "/en/x/y"]) {
+      const response = await request.get(path);
+      const html = await response.text();
+
+      expect(response.status(), path).toBe(404);
+      expect(html).toContain(ptBR.notFound.title);
+      expect(html).toContain(en.notFound.title);
+    }
   });
 });
 
@@ -22,14 +52,14 @@ test.describe("página provisória", () => {
 // teste e com a indexação liberada, para exercitar os dois lados da regra.
 test.describe("indexação", () => {
   test("no host do PUBLIC_ORIGIN, permite indexar", async ({ request }) => {
-    const response = await request.get("/");
+    const response = await request.get("/pt");
 
     expect(response.status()).toBe(200);
     expect(response.headers()["x-robots-tag"]).toBeUndefined();
   });
 
   test("em outro host, pede para não indexar", async ({ request }) => {
-    const response = await request.get("/", {
+    const response = await request.get("/pt", {
       headers: { host: "outro-endereco.example" },
     });
 

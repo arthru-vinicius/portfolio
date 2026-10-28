@@ -15,6 +15,22 @@
   --color-success: #067647;
 }
 
+/* Cores e fontes do site público. Os valores ficam no `site.css`, que os troca
+   pelo tema escolhido; aqui só viram utilitários (`bg-page`, `text-ink`...). */
+@theme inline {
+  --color-page: var(--site-page);
+  --color-card: var(--site-card);
+  --color-card-2: var(--site-card-2);
+  --color-line: var(--site-line);
+  --color-ink: var(--site-ink);
+  --color-ink-muted: var(--site-ink-muted);
+  --color-accent: var(--site-accent);
+  --color-accent-2: var(--site-accent-2);
+  --color-on-accent: var(--site-on-accent);
+  --font-site: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-site-mono: var(--font-jetbrains), ui-monospace, Consolas, monospace;
+}
+
 /* A barra de rolagem tem o espaço reservado sempre: a página não pula para o
    lado ao passar de uma tela curta para uma longa. */
 html {

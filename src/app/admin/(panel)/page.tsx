@@ -89,6 +89,15 @@ export default async function AdminHomePage() {
             </h2>
             <p className="text-muted">{adminMessages.publish.description}</p>
           </div>
+          <p className="flex flex-wrap gap-x-3 gap-y-1">
+            <span>{adminMessages.preview.links}</span>
+            <Link href="/admin/preview/pt" className={linkClass}>
+              {adminMessages.preview.portuguese}
+            </Link>
+            <Link href="/admin/preview/en" className={linkClass}>
+              {adminMessages.preview.english}
+            </Link>
+          </p>
           {!unpublished && <p>{adminMessages.publish.nothingToPublish}</p>}
           {problems.length > 0 && (
             <div className="flex flex-col gap-2">

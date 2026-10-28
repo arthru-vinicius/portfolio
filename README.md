@@ -4,8 +4,8 @@ Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.art
 site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e XLSX gerado
 a partir dele.
 
-> Em construção. A estrutura do projeto está pronta; o conteúdo e o design chegam nas próximas
-> entregas.
+> Em construção. O painel e o site já funcionam; a foto, o formulário de contato e o currículo
+> chegam nas próximas entregas.
 
 ## Arquitetura
 
@@ -37,7 +37,26 @@ npm run dev   # http://localhost:3000, com o banco em .data/portfolio.db
 
 Na primeira vez, o `npm run dev` grava no banco local um documento fictício, como rascunho e
 como revisão publicada. As variáveis do servidor estão em `.env.example`; fora de produção, os
-valores padrão bastam para o site.
+valores padrão bastam para o site. Abra pelo `localhost`, e não por `127.0.0.1`: o `next dev`
+recusa a conexão de recarregamento automático vinda de outra origem.
+
+## Site
+
+- **Endereços:** `/pt` e `/en`, a URL canônica de cada idioma. A raiz `/` leva ao idioma do
+  navegador (`Accept-Language`), com um redirecionamento temporário que varia com o cabeçalho.
+  Um endereço que não existe dá um 404 nos dois idiomas (`global-not-found`).
+- **Conteúdo:** a última revisão publicada, só com os blocos e itens visíveis, na ordem do
+  painel. O cabeçalho monta o menu a partir dos blocos. Os textos longos aceitam um subconjunto
+  de Markdown (parágrafos, listas, negrito, itálico, código e links), que vira elemento React,
+  nunca HTML cru, e só aceita links `https:`, `http:` e `mailto:`.
+- **Tema:** segue o do sistema, e um botão troca entre sistema, claro e escuro. A escolha fica no
+  `localStorage`, sem cookie, e um script curto no `<head>` a aplica antes da primeira pintura.
+- **Visual:** quase preto com verde, títulos grandes com degradê, uma rede de partículas atrás do
+  topo, a faixa das habilidades e a barra de progresso da leitura. Os efeitos param fora da tela
+  e com "reduzir movimento". As fontes (Plus Jakarta Sans e JetBrains Mono, licença OFL) vêm dos
+  pacotes do Fontsource e são servidas pelo próprio site: o build não depende do Google Fonts.
+- **Pré-visualização:** `/admin/preview/pt` e `/admin/preview/en` mostram o rascunho com os
+  mesmos componentes do site, antes de publicar.
 
 ## Painel
 
