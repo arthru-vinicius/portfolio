@@ -40,14 +40,29 @@ export default async function PreviewPage({
   const other = locale === "en" ? "pt-BR" : "en";
 
   return (
+    // A faixa da prévia vem depois do site, fixa embaixo: o site continua
+    // começando pelo link de pular, como nas páginas públicas.
     <div
       lang={locale}
-      className={`site ${jakarta.variable} ${jetbrains.variable} min-h-dvh bg-page font-site text-ink`}
+      className={`site ${jakarta.variable} ${jetbrains.variable} min-h-dvh bg-page pb-24 font-site text-ink`}
     >
-      <div
-        role="note"
+      {draft === null ? (
+        <main className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <p>{adminMessages.home.draftFromNewerVersion}</p>
+        </main>
+      ) : (
+        <SitePage
+          document={toPublicDocument(draft.document)}
+          locale={locale}
+          ownHost={
+            publicOrigin === null ? null : new URL(publicOrigin).hostname
+          }
+        />
+      )}
+      <aside
+        aria-label={messages.title}
         lang="pt-BR"
-        className="border-b border-line bg-card-2 text-sm"
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-card-2 text-sm shadow-[0_-8px_24px_-12px_rgb(0_0_0/0.4)]"
       >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 sm:px-6">
           <p className="mr-auto">{messages.banner}</p>
@@ -63,20 +78,7 @@ export default async function PreviewPage({
             {messages.back}
           </Link>
         </div>
-      </div>
-      {draft === null ? (
-        <p className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-          {adminMessages.home.draftFromNewerVersion}
-        </p>
-      ) : (
-        <SitePage
-          document={toPublicDocument(draft.document)}
-          locale={locale}
-          ownHost={
-            publicOrigin === null ? null : new URL(publicOrigin).hostname
-          }
-        />
-      )}
+      </aside>
     </div>
   );
 }
