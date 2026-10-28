@@ -23,6 +23,7 @@ import {
 import {
   toFieldIssues,
   type ImportResult,
+  type RestoreResult,
   type SaveResult,
 } from "@/content/save-result";
 import {
@@ -42,6 +43,7 @@ import {
   readEditableDraft,
   updateDraft,
 } from "@/lib/db/draft";
+import { readRevision, type PublishedRevision } from "@/lib/db/revisions";
 
 import { draftParts, versionOf } from "./draft-parts";
 
@@ -333,6 +335,53 @@ export async function importDocument(input: {
     part: draftParts.document,
     baseVersion: parsed.data.version,
     change: () => imported,
+    pick: () => null,
+    prefixOf: () => [],
+  });
+}
+
+const restoreInput = z.object({
+  version: versionSchema,
+  revisionId: z.number().int().positive(),
+});
+
+/**
+ * Troca o rascunho por uma revisão publicada, para revisar e publicar de novo.
+ * Nada é publicado: o site continua com a última publicação.
+ *
+ * @param input - A versão do documento que a página abriu e o número da
+ *   revisão.
+ * @returns O resultado do salvamento, ou `not-found` se a revisão não existe.
+ */
+export async function restoreRevision(input: {
+  version: string;
+  revisionId: number;
+}): Promise<RestoreResult> {
+  await requireAdmin();
+  const parsed = restoreInput.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, reason: "not-found" };
+  }
+
+  let revision: PublishedRevision | null;
+  try {
+    revision = readRevision(getDatabase(), parsed.data.revisionId);
+  } catch (error) {
+    if (error instanceof NewerDocumentVersionError) {
+      return { ok: false, reason: "newer-version" };
+    }
+    throw error;
+  }
+  if (revision === null) {
+    return { ok: false, reason: "not-found" };
+  }
+
+  const restored = revision.document;
+  return persist({
+    what: `restauração da revisão ${revision.id}`,
+    part: draftParts.document,
+    baseVersion: parsed.data.version,
+    change: () => restored,
     pick: () => null,
     prefixOf: () => [],
   });

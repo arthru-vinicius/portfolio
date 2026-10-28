@@ -13,6 +13,7 @@ const sections = [
   { href: "/admin/profile", label: nav.profile },
   { href: "/admin/blocks", label: nav.blocks },
   { href: "/admin/resume", label: nav.resume },
+  { href: "/admin/history", label: nav.history },
 ] as const;
 
 function isCurrent(pathname: string, href: string): boolean {

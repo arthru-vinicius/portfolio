@@ -12,7 +12,7 @@ import {
 
 import { asNewVisitor, logIn, waitForPage } from "./admin-session";
 
-const { backup, editor, fields, home, nav } = adminMessages;
+const { backup, editor, fields, history, home, nav, publish } = adminMessages;
 
 // Os testes daqui mexem no mesmo rascunho, então rodam em ordem. O primeiro
 // importa o documento fictício, e os outros partem dele. Os testes de login
@@ -234,6 +234,73 @@ test("exporta o rascunho, com os campos privados", async ({ page }) => {
   });
 });
 
+test("publica o rascunho depois de confirmar", async ({ page }) => {
+  // Um nome diferente a cada tentativa: numa nova tentativa do CI, o rascunho
+  // seria igual ao que a primeira publicou, e não haveria o que publicar.
+  await openSection(page, nav.profile);
+  await page
+    .getByLabel(fields.displayName, { exact: true })
+    .fill(`Ana Publicada ${test.info().retry}`);
+  await save(page);
+  await openSection(page, nav.home);
+
+  await page.getByRole("button", { name: publish.submit, exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: publish.confirmTitle });
+  await expect(
+    dialog.getByRole("button", { name: editor.cancel }),
+  ).toBeFocused();
+  await dialog.getByRole("button", { name: publish.confirm }).click();
+
+  // O número da revisão não é fixo: numa nova tentativa do CI, o banco já tem
+  // a publicação da primeira.
+  await expect(
+    page.getByRole("status").getByText(/^Revisão \d+ publicada às/),
+  ).toBeVisible();
+  await expect(page.getByText(publish.nothingToPublish)).toBeVisible();
+  await expect(page.getByText(/^Revisão \d+, publicada em/)).toBeVisible();
+});
+
+test("aponta o que falta publicar e restaura a revisão do histórico", async ({
+  page,
+}) => {
+  await openSection(page, nav.profile);
+  await page
+    .getByRole("group", { name: new RegExp(`^${fields.headline}`) })
+    .getByLabel(editor.english)
+    .fill("");
+  await save(page);
+
+  await openSection(page, nav.home);
+  await expect(page.getByText(publish.problemsIntro(1))).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: `Perfil › ${fields.headline} › em inglês`,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: publish.submit, exact: true }),
+  ).toHaveCount(0);
+
+  // A revisão no ar é a primeira da lista.
+  await openSection(page, nav.history);
+  const live = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("heading", { name: /^Revisão \d+$/ }) })
+    .first();
+  await expect(live.getByText(history.live, { exact: true })).toBeVisible();
+  await live.getByRole("button", { name: /^Restaurar como rascunho/ }).click();
+  await page
+    .getByRole("dialog", { name: /^Restaurar a revisão \d+\?$/ })
+    .getByRole("button", { name: history.confirm })
+    .click();
+  await expect(
+    live.getByRole("status").getByText(/^A revisão \d+ virou o rascunho/),
+  ).toBeVisible();
+
+  await openSection(page, nav.home);
+  await expect(page.getByText(publish.nothingToPublish)).toBeVisible();
+});
+
 for (const colorScheme of ["light", "dark"] as const) {
   test(`telas de edição sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
     page,
@@ -243,7 +310,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await scan();
-    for (const section of [nav.profile, nav.blocks, nav.resume]) {
+    for (const section of [nav.profile, nav.blocks, nav.resume, nav.history]) {
       await openSection(page, section);
       await scan();
     }
@@ -253,6 +320,9 @@ for (const colorScheme of ["light", "dark"] as const) {
       .getByRole("link", { name: editor.editLabel("Experiência") })
       .click();
     await waitForPage(page, "Experiência");
+    // O título desta tela sai do `generateMetadata`, que lê o banco e chega
+    // depois do corpo: sem esperar, o axe pode ver a página sem `<title>`.
+    await expect(page).toHaveTitle(/^Experiência · /);
     await page
       .getByRole("button", { name: /^Abrir / })
       .first()

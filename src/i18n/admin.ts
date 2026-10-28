@@ -16,6 +16,7 @@ export const adminMessages = {
     profile: "Perfil",
     blocks: "Blocos",
     resume: "Currículo",
+    history: "Histórico",
   },
   login: {
     title: "Entrar",
@@ -41,12 +42,77 @@ export const adminMessages = {
     draftSavedAt: (time: string) => `Salvo em ${time}.`,
     draftFromNewerVersion:
       "Este rascunho foi salvo por uma versão mais recente do painel e não abre nesta. Nada foi perdido.",
+    draftUnpublished: "Tem alterações que ainda não foram publicadas.",
+    draftSameAsPublished: "Igual ao que está publicado.",
     published: "Publicado",
     nothingPublished: "Nada foi publicado ainda.",
     publishedAt: (revision: number, time: string) =>
       `Revisão ${revision}, publicada em ${time}.`,
     gettingStarted:
       "Para começar, importe um arquivo de conteúdo ou preencha o perfil e os blocos.",
+  },
+  publish: {
+    heading: "Publicar",
+    description:
+      "Publicar coloca o rascunho no ar: o site muda na próxima visita, sem deploy. Cada publicação fica no histórico.",
+    nothingToPublish: "Não há alterações para publicar.",
+    problemsIntro: (count: number) =>
+      count === 1
+        ? "Falta corrigir 1 ponto antes de publicar:"
+        : `Falta corrigir ${count} pontos antes de publicar:`,
+    moreProblems: (count: number) =>
+      `E mais ${count} ${count === 1 ? "ponto" : "pontos"}.`,
+    note: "Nota (opcional)",
+    noteHint: "Aparece no histórico, como “Inglês revisado”.",
+    submit: "Publicar",
+    publishing: "Publicando…",
+    confirmTitle: "Publicar o rascunho?",
+    confirmMessage:
+      "O site passa a mostrar o conteúdo do rascunho. A publicação anterior continua no histórico.",
+    confirm: "Publicar",
+    published: (revision: number, time: string) =>
+      `Revisão ${revision} publicada às ${time}.`,
+    unchanged: "O rascunho já é igual ao que está publicado.",
+    incomplete:
+      "O rascunho mudou e tem pontos a corrigir. Recarregue a página para ver a lista.",
+    conflict:
+      "O rascunho mudou em outra aba ou janela. Recarregue a página para publicar a versão mais recente.",
+    newerVersion:
+      "O rascunho foi salvo por uma versão mais recente do painel e não pode ser publicado por esta.",
+    unexpected:
+      "Não foi possível publicar agora. Confira a conexão e tente de novo.",
+  },
+  problems: {
+    profile: "Perfil",
+    resume: "Currículo",
+    blocks: "Blocos",
+  },
+  history: {
+    title: "Histórico",
+    heading: "Histórico",
+    intro:
+      "Cada publicação fica guardada aqui. Restaurar uma revisão a transforma no rascunho, para revisar e publicar de novo; o site só muda quando você publicar.",
+    empty: "Nada foi publicado ainda.",
+    revision: (revision: number) => `Revisão ${revision}`,
+    publishedAt: (time: string) => `Publicada em ${time}`,
+    live: "No ar",
+    newerVersion:
+      "Salva por uma versão mais recente do painel: não abre nesta.",
+    download: "Baixar (YAML)",
+    downloadLabel: (revision: number) => `Baixar (YAML): revisão ${revision}`,
+    restore: "Restaurar como rascunho",
+    restoreLabel: (revision: number) =>
+      `Restaurar como rascunho: revisão ${revision}`,
+    restoring: "Restaurando…",
+    confirmTitle: (revision: number) => `Restaurar a revisão ${revision}?`,
+    confirmMessage:
+      "O rascunho atual será trocado por esta revisão. O que está publicado continua no ar até a próxima publicação.",
+    confirm: "Restaurar",
+    restored: (revision: number) =>
+      `A revisão ${revision} virou o rascunho. Revise e publique quando quiser.`,
+    notFound: "Esta revisão não existe mais.",
+    limit: (count: number) =>
+      `Mostrando as ${count} publicações mais recentes.`,
   },
   backup: {
     heading: "Cópia de segurança",
