@@ -3,6 +3,8 @@ import type { DatabaseSync } from "node:sqlite";
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { parseContentFile } from "@/content/content-file";
+import { adminMessages } from "@/i18n/admin";
 import { SESSION_COOKIE_NAME, createSessionToken } from "@/lib/auth/session";
 import { saveDraft } from "@/lib/db/draft";
 import { insertRevision } from "@/lib/db/revisions";
@@ -50,7 +52,7 @@ function exportRequest(query = ""): NextRequest {
   return new NextRequest(`https://${TEST_ADMIN_HOST}/admin/export${query}`);
 }
 
-describe("exportar JSON", () => {
+describe("exportar o arquivo de conteúdo", () => {
   beforeEach(() => {
     state.admin = readyAdminEnv();
     state.db = createTestDatabase();
@@ -70,21 +72,25 @@ describe("exportar JSON", () => {
     state.db.close();
   });
 
-  it("baixa o rascunho inteiro, com os campos privados, como anexo", async () => {
+  it("baixa o rascunho inteiro em YAML, com os campos privados, como anexo", async () => {
     saveDraft(state.db, portfolioFixture, 0);
 
     const response = await GET(exportRequest());
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe(
-      "application/json; charset=utf-8",
+      "application/yaml; charset=utf-8",
     );
     expect(response.headers.get("content-disposition")).toMatch(
-      /^attachment; filename="portfolio-rascunho-\d{4}-\d{2}-\d{2}\.json"$/,
+      /^attachment; filename="portfolio-rascunho-\d{4}-\d{2}-\d{2}\.yaml"$/,
     );
     const body = await response.text();
-    expect(JSON.parse(body)).toEqual(portfolioFixture);
+    expect(parseContentFile(body)).toEqual(portfolioFixture);
     expect(body).toContain(FIXTURE_PHONE);
+    // O aviso de que o arquivo tem os campos privados vem no topo.
+    expect(body.startsWith(`# ${adminMessages.backup.fileHeader[0]}\n`)).toBe(
+      true,
+    );
   });
 
   it("sem rascunho, baixa a última publicação", async () => {
@@ -93,7 +99,7 @@ describe("exportar JSON", () => {
     const response = await GET(exportRequest());
 
     expect(response.headers.get("content-disposition")).toBe(
-      `attachment; filename="portfolio-revisao-${revision.id}.json"`,
+      `attachment; filename="portfolio-revisao-${revision.id}.yaml"`,
     );
   });
 
@@ -106,7 +112,9 @@ describe("exportar JSON", () => {
 
     const response = await GET(exportRequest(`?revision=${second.id}`));
 
-    expect(JSON.parse(await response.text())).toMatchObject({ blocks: [] });
+    expect(parseContentFile(await response.text())).toMatchObject({
+      blocks: [],
+    });
   });
 
   it("responde 404 sem conteúdo, ou com uma revisão que não existe", async () => {

@@ -13,6 +13,10 @@ import {
   type BlockSummary,
 } from "@/content/editing";
 import {
+  ContentFileSyntaxError,
+  parseContentFile,
+} from "@/content/content-file";
+import {
   migrateDocument,
   NewerDocumentVersionError,
 } from "@/content/migrations";
@@ -46,7 +50,7 @@ import { draftParts, versionOf } from "./draft-parts";
 
 const versionSchema = z.string().max(100);
 
-/** O tamanho máximo do JSON importado, abaixo do limite das Server Actions. */
+/** O tamanho máximo do arquivo importado, abaixo do limite das Server Actions. */
 const IMPORT_LIMIT = 900_000;
 
 type Part = (document: PortfolioDocument) => unknown;
@@ -276,13 +280,13 @@ export async function saveResumeSettings(input: {
 
 const importInput = z.object({
   version: versionSchema,
-  json: z.string().max(IMPORT_LIMIT),
+  text: z.string().max(IMPORT_LIMIT),
 });
 
 /**
- * Troca o rascunho pelo documento de um arquivo JSON (por exemplo, uma cópia
- * exportada). Documentos de versões antigas do schema sobem para a atual.
- * Nada é publicado.
+ * Troca o rascunho pelo documento de um arquivo de conteúdo, em YAML ou JSON
+ * (por exemplo, uma cópia exportada). Itens sem `id` ganham um, e documentos
+ * de versões antigas do schema sobem para a atual. Nada é publicado.
  *
  * @param input - A versão do documento que a página abriu e o texto do
  *   arquivo.
@@ -291,19 +295,24 @@ const importInput = z.object({
  */
 export async function importDocument(input: {
   version: string;
-  json: string;
+  text: string;
 }): Promise<ImportResult> {
   await requireAdmin();
   const parsed = importInput.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, reason: "invalid-json" };
+    return { ok: false, reason: "unreadable" };
   }
 
   let data: unknown;
   try {
-    data = JSON.parse(parsed.data.json);
-  } catch {
-    return { ok: false, reason: "invalid-json" };
+    data = parseContentFile(parsed.data.text);
+  } catch (error) {
+    if (error instanceof ContentFileSyntaxError) {
+      return error.line === undefined
+        ? { ok: false, reason: "unreadable" }
+        : { ok: false, reason: "unreadable", line: error.line };
+    }
+    throw error;
   }
 
   let imported: PortfolioDocument;
@@ -320,7 +329,7 @@ export async function importDocument(input: {
   }
 
   return persist({
-    what: "importação de JSON",
+    what: "importação do arquivo de conteúdo",
     part: draftParts.document,
     baseVersion: parsed.data.version,
     change: () => imported,

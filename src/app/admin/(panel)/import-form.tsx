@@ -25,8 +25,8 @@ function feedbackFor(result: ImportResult): Feedback {
     return { tone: "success", message: messages.imported };
   }
   switch (result.reason) {
-    case "invalid-json":
-      return { tone: "error", message: messages.invalidJson };
+    case "unreadable":
+      return { tone: "error", message: messages.unreadable(result.line) };
     case "newer-version":
       return { tone: "error", message: messages.newerVersion };
     case "conflict":
@@ -48,8 +48,8 @@ function feedbackFor(result: ImportResult): Feedback {
 }
 
 /**
- * Importa um arquivo JSON para o rascunho, depois de confirmar. Nada é
- * publicado.
+ * Importa um arquivo de conteúdo, em YAML ou JSON, para o rascunho, depois de
+ * confirmar. Nada é publicado.
  *
  * @param props.version - Versão do documento que a página abriu.
  * @param props.replacesDraft - Se já existe um rascunho, que a importação
@@ -91,7 +91,7 @@ export function ImportForm({
       try {
         const result = await importDocument({
           version,
-          json: await chosen.text(),
+          text: await chosen.text(),
         });
         setFeedback(feedbackFor(result));
         if (result.ok && inputRef.current !== null) {
@@ -117,7 +117,7 @@ export function ImportForm({
         ref={inputRef}
         id="import-file"
         type="file"
-        accept="application/json,.json"
+        accept=".yaml,.yml,.json,application/yaml,application/json"
         aria-describedby="import-file-hint"
         className={`${inputClass} file:mr-3 file:rounded file:border-0 file:bg-surface file:px-3 file:py-1.5 file:font-medium file:text-foreground`}
       />

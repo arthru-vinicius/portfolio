@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { parse, stringify } from "yaml";
 
 import { adminMessages } from "../../src/i18n/admin";
 import {
@@ -46,13 +47,13 @@ test.beforeEach(async ({ page }) => {
   await waitForPage(page, home.heading);
 });
 
-test("importa o conteúdo de um arquivo JSON, depois de confirmar", async ({
+test("importa o conteúdo de um arquivo YAML, depois de confirmar", async ({
   page,
 }) => {
   await page.getByLabel(backup.importLabel).setInputFiles({
-    name: "conteudo.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(JSON.stringify(portfolioFixture)),
+    name: "conteudo.yaml",
+    mimeType: "application/yaml",
+    buffer: Buffer.from(stringify(portfolioFixture)),
   });
   await page
     .getByRole("button", { name: backup.importSubmit, exact: true })
@@ -224,9 +225,9 @@ test("exporta o rascunho, com os campos privados", async ({ page }) => {
   ]);
 
   expect(download.suggestedFilename()).toMatch(
-    /^portfolio-rascunho-\d{4}-\d{2}-\d{2}\.json$/,
+    /^portfolio-rascunho-\d{4}-\d{2}-\d{2}\.yaml$/,
   );
-  const exported = JSON.parse(await readFile(await download.path(), "utf8"));
+  const exported = parse(await readFile(await download.path(), "utf8"));
   expect(exported.profile).toMatchObject({
     fullName: "Outra aba",
     private: { phone: FIXTURE_PHONE },
