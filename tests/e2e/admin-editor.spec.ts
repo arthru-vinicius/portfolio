@@ -235,6 +235,15 @@ test("exporta o rascunho, com os campos privados", async ({ page }) => {
 });
 
 test("publica o rascunho depois de confirmar", async ({ page }) => {
+  // Um nome diferente a cada tentativa: numa nova tentativa do CI, o rascunho
+  // seria igual ao que a primeira publicou, e não haveria o que publicar.
+  await openSection(page, nav.profile);
+  await page
+    .getByLabel(fields.displayName, { exact: true })
+    .fill(`Ana Publicada ${test.info().retry}`);
+  await save(page);
+  await openSection(page, nav.home);
+
   await page.getByRole("button", { name: publish.submit, exact: true }).click();
   const dialog = page.getByRole("dialog", { name: publish.confirmTitle });
   await expect(
@@ -242,11 +251,13 @@ test("publica o rascunho depois de confirmar", async ({ page }) => {
   ).toBeFocused();
   await dialog.getByRole("button", { name: publish.confirm }).click();
 
+  // O número da revisão não é fixo: numa nova tentativa do CI, o banco já tem
+  // a publicação da primeira.
   await expect(
-    page.getByRole("status").getByText(/^Revisão 1 publicada às/),
+    page.getByRole("status").getByText(/^Revisão \d+ publicada às/),
   ).toBeVisible();
   await expect(page.getByText(publish.nothingToPublish)).toBeVisible();
-  await expect(page.getByText(/^Revisão 1, publicada em/)).toBeVisible();
+  await expect(page.getByText(/^Revisão \d+, publicada em/)).toBeVisible();
 });
 
 test("aponta o que falta publicar e restaura a revisão do histórico", async ({
@@ -270,13 +281,20 @@ test("aponta o que falta publicar e restaura a revisão do histórico", async ({
     page.getByRole("button", { name: publish.submit, exact: true }),
   ).toHaveCount(0);
 
+  // A revisão no ar é a primeira da lista.
   await openSection(page, nav.history);
-  await expect(page.getByText(history.live)).toBeVisible();
-  await page.getByRole("button", { name: history.restoreLabel(1) }).click();
-  const dialog = page.getByRole("dialog", { name: history.confirmTitle(1) });
-  await dialog.getByRole("button", { name: history.confirm }).click();
+  const live = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("heading", { name: /^Revisão \d+$/ }) })
+    .first();
+  await expect(live.getByText(history.live, { exact: true })).toBeVisible();
+  await live.getByRole("button", { name: /^Restaurar como rascunho/ }).click();
+  await page
+    .getByRole("dialog", { name: /^Restaurar a revisão \d+\?$/ })
+    .getByRole("button", { name: history.confirm })
+    .click();
   await expect(
-    page.getByRole("status").getByText(history.restored(1)),
+    live.getByRole("status").getByText(/^A revisão \d+ virou o rascunho/),
   ).toBeVisible();
 
   await openSection(page, nav.home);
