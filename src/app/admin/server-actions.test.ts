@@ -57,11 +57,16 @@ const SERVER_ACTIONS: Record<
     load: () => import("./(panel)/content-actions"),
     actions: {
       importDocument: "admin",
+      restoreRevision: "admin",
       saveBlock: "admin",
       saveBlockList: "admin",
       saveProfile: "admin",
       saveResumeSettings: "admin",
     },
+  },
+  "src/app/admin/(panel)/publish-actions.ts": {
+    load: () => import("./(panel)/publish-actions"),
+    actions: { publishDraft: "admin" },
   },
 };
 

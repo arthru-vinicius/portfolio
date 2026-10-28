@@ -1,7 +1,7 @@
 import type { LocalizedText } from "./schema";
 
 /** Os idiomas de todo texto do conteúdo. */
-const languages = [
+export const languages = [
   "pt-BR",
   "en",
 ] as const satisfies readonly (keyof LocalizedText)[];
@@ -17,7 +17,13 @@ export function isMissingTranslation(value: LocalizedText): boolean {
   return filled.length === 1;
 }
 
-function isLocalizedText(value: object): value is LocalizedText {
+/**
+ * Diz se um objeto do documento é um texto nos dois idiomas.
+ *
+ * @param value - Qualquer objeto do documento.
+ * @returns `true` quando ele tem exatamente `pt-BR` e `en`, os dois texto.
+ */
+export function isLocalizedText(value: object): value is LocalizedText {
   const keys = Object.keys(value);
   return (
     keys.length === languages.length &&

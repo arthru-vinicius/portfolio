@@ -31,6 +31,28 @@ export type ImportResult =
   SaveResult<null> | { ok: false; reason: "unreadable"; line?: number };
 
 /**
+ * Resposta da restauração de uma revisão como rascunho. Além das recusas do
+ * salvamento, a revisão pode não existir (`not-found`).
+ */
+export type RestoreResult =
+  SaveResult<null> | { ok: false; reason: "not-found" };
+
+/**
+ * Resposta da publicação.
+ *
+ * - `ok`: a revisão nova, já no ar.
+ * - `incomplete`: o rascunho não passa na conferência da publicação;
+ *   `problems` diz onde, com o caminho no documento.
+ * - `unchanged`: o rascunho é igual ao que está publicado.
+ * - `conflict`: o rascunho mudou desde que a página abriu.
+ * - `newer-version`: o rascunho foi salvo por uma versão mais nova do painel.
+ */
+export type PublishResult =
+  | { ok: true; revisionId: number; publishedAt: string }
+  | { ok: false; reason: "conflict" | "newer-version" | "unchanged" }
+  | { ok: false; reason: "incomplete"; problems: FieldIssue[] };
+
+/**
  * Converte os problemas de um `ZodError` em caminhos de campo.
  *
  * @param error - O erro da validação.

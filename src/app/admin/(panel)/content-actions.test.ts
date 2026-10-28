@@ -7,6 +7,7 @@ import { createBlock, createEmptyDocument } from "@/content/editing";
 import type { Block, PortfolioDocument } from "@/content/schema";
 import { SESSION_COOKIE_NAME, createSessionToken } from "@/lib/auth/session";
 import { readDraft, saveDraft } from "@/lib/db/draft";
+import { insertRevision, listRevisions } from "@/lib/db/revisions";
 import type { AdminEnv } from "@/lib/env";
 
 import { portfolioFixture } from "../../../../tests/fixtures/portfolio-document";
@@ -46,6 +47,7 @@ vi.mock("@/lib/db/database", () => ({ getDatabase: () => state.db }));
 const { revalidatePath } = await import("next/cache");
 const {
   importDocument,
+  restoreRevision,
   saveBlock,
   saveBlockList,
   saveProfile,
@@ -417,5 +419,53 @@ describe("importDocument", () => {
         text: JSON.stringify(portfolioFixture),
       }),
     ).resolves.toEqual({ ok: false, reason: "conflict" });
+  });
+});
+
+describe("restoreRevision", () => {
+  it("troca o rascunho pela revisão, sem publicar", async () => {
+    const revision = insertRevision(state.db, portfolioFixture);
+    const current = { ...copy(), blocks: [] };
+    saveDraft(state.db, current, 0);
+
+    await expect(
+      restoreRevision({ version: versionOf(current), revisionId: revision.id }),
+    ).resolves.toMatchObject({ ok: true, saved: null });
+    expect(readDraft(state.db)?.document).toEqual(portfolioFixture);
+    expect(listRevisions(state.db)).toHaveLength(1);
+  });
+
+  it("recusa uma revisão que não existe", async () => {
+    for (const revisionId of [7, 0, 1.5]) {
+      await expect(
+        restoreRevision({ version: "", revisionId }),
+      ).resolves.toEqual({ ok: false, reason: "not-found" });
+    }
+  });
+
+  it("recusa restaurar sobre um rascunho que mudou desde que a página abriu", async () => {
+    const revision = insertRevision(state.db, portfolioFixture);
+    const opened = versionOf(createEmptyDocument());
+    seedDraft();
+
+    await expect(
+      restoreRevision({ version: opened, revisionId: revision.id }),
+    ).resolves.toEqual({ ok: false, reason: "conflict" });
+  });
+
+  it("recusa uma revisão salva por uma versão mais nova do painel", async () => {
+    const { lastInsertRowid } = state.db
+      .prepare(
+        `INSERT INTO published_revisions (schema_version, document, published_at)
+         VALUES (99, ?, ?)`,
+      )
+      .run(
+        JSON.stringify({ ...portfolioFixture, schemaVersion: 99 }),
+        new Date().toISOString(),
+      );
+
+    await expect(
+      restoreRevision({ version: "", revisionId: Number(lastInsertRowid) }),
+    ).resolves.toEqual({ ok: false, reason: "newer-version" });
   });
 });

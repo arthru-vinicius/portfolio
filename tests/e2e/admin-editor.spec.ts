@@ -12,7 +12,7 @@ import {
 
 import { asNewVisitor, logIn, waitForPage } from "./admin-session";
 
-const { backup, editor, fields, home, nav } = adminMessages;
+const { backup, editor, fields, history, home, nav, publish } = adminMessages;
 
 // Os testes daqui mexem no mesmo rascunho, então rodam em ordem. O primeiro
 // importa o documento fictício, e os outros partem dele. Os testes de login
@@ -234,6 +234,55 @@ test("exporta o rascunho, com os campos privados", async ({ page }) => {
   });
 });
 
+test("publica o rascunho depois de confirmar", async ({ page }) => {
+  await page.getByRole("button", { name: publish.submit, exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: publish.confirmTitle });
+  await expect(
+    dialog.getByRole("button", { name: editor.cancel }),
+  ).toBeFocused();
+  await dialog.getByRole("button", { name: publish.confirm }).click();
+
+  await expect(
+    page.getByRole("status").getByText(/^Revisão 1 publicada às/),
+  ).toBeVisible();
+  await expect(page.getByText(publish.nothingToPublish)).toBeVisible();
+  await expect(page.getByText(/^Revisão 1, publicada em/)).toBeVisible();
+});
+
+test("aponta o que falta publicar e restaura a revisão do histórico", async ({
+  page,
+}) => {
+  await openSection(page, nav.profile);
+  await page
+    .getByRole("group", { name: new RegExp(`^${fields.headline}`) })
+    .getByLabel(editor.english)
+    .fill("");
+  await save(page);
+
+  await openSection(page, nav.home);
+  await expect(page.getByText(publish.problemsIntro(1))).toBeVisible();
+  await expect(
+    page.getByRole("link", {
+      name: `Perfil › ${fields.headline} › em inglês`,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: publish.submit, exact: true }),
+  ).toHaveCount(0);
+
+  await openSection(page, nav.history);
+  await expect(page.getByText(history.live)).toBeVisible();
+  await page.getByRole("button", { name: history.restoreLabel(1) }).click();
+  const dialog = page.getByRole("dialog", { name: history.confirmTitle(1) });
+  await dialog.getByRole("button", { name: history.confirm }).click();
+  await expect(
+    page.getByRole("status").getByText(history.restored(1)),
+  ).toBeVisible();
+
+  await openSection(page, nav.home);
+  await expect(page.getByText(publish.nothingToPublish)).toBeVisible();
+});
+
 for (const colorScheme of ["light", "dark"] as const) {
   test(`telas de edição sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
     page,
@@ -243,7 +292,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 
     await scan();
-    for (const section of [nav.profile, nav.blocks, nav.resume]) {
+    for (const section of [nav.profile, nav.blocks, nav.resume, nav.history]) {
       await openSection(page, section);
       await scan();
     }

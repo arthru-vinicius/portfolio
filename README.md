@@ -75,6 +75,15 @@ também derruba as sessões abertas.
   recusado, em vez de apagar a outra alteração; mudar outra parte não atrapalha.
 - Sair de uma tela com alterações não salvas pede confirmação. A ordem dos itens muda por
   botões, que funcionam pelo teclado.
+- **Publicar**, na visão geral, grava uma revisão nova e expira o cache das páginas (`updateTag`):
+  o site muda na próxima visita, sem deploy. Antes, a publicação confere o rascunho: todo texto
+  que vai para o site ou para o currículo precisa dos dois idiomas, os campos principais de cada
+  item precisam estar preenchidos e ao menos um bloco precisa estar visível. O que falta aparece
+  na visão geral, com link para a tela que corrige. A página publica exatamente a versão que
+  mostrava: se o rascunho mudou em outra aba, a publicação é recusada.
+- **Histórico:** as revisões publicadas, da mais recente para a mais antiga, cada uma com
+  download em YAML e **Restaurar como rascunho**. Restaurar não publica, e as revisões nunca
+  mudam: o banco recusa alterá-las ou apagá-las.
 - **Exportar e importar em YAML**, na visão geral. O arquivo exportado, com os campos privados,
   é a cópia do conteúdo fora do servidor, e dá para editá-lo à mão: os textos de várias linhas
   ficam em bloco literal (`|`), e um item novo pode ficar sem `id`, que ele ganha na importação.
