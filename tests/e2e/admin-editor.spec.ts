@@ -320,6 +320,9 @@ for (const colorScheme of ["light", "dark"] as const) {
       .getByRole("link", { name: editor.editLabel("Experiência") })
       .click();
     await waitForPage(page, "Experiência");
+    // O título desta tela sai do `generateMetadata`, que lê o banco e chega
+    // depois do corpo: sem esperar, o axe pode ver a página sem `<title>`.
+    await expect(page).toHaveTitle(/^Experiência · /);
     await page
       .getByRole("button", { name: /^Abrir / })
       .first()
