@@ -307,6 +307,54 @@ test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   await expect(title).toContainText("Full Stack Developer");
 });
 
+test("a página publicada se apresenta aos buscadores e às redes", async ({
+  page,
+}) => {
+  await page.goto("/pt/");
+  const head = page.locator("head");
+  await expect(head.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    /\/pt\/$/,
+  );
+  await expect(
+    head.locator('link[rel="alternate"][hreflang="en"]'),
+  ).toHaveAttribute("href", /\/en\/$/);
+
+  const image = await head
+    .locator('meta[property="og:image"]')
+    .getAttribute("content");
+  expect(image).toMatch(/\/pt\/og\.jpg\?v=\d+$/);
+  const card = await page.request.get(image ?? "");
+  expect(card.status()).toBe(200);
+  expect(card.headers()["content-type"]).toBe("image/jpeg");
+
+  const jsonLd = JSON.parse(
+    (await page.locator('script[type="application/ld+json"]').textContent()) ??
+      "{}",
+  );
+  expect(jsonLd).toMatchObject({
+    "@type": "ProfilePage",
+    // O nome completo muda nos testes anteriores; o cargo, não.
+    mainEntity: {
+      "@type": "Person",
+      name: expect.any(String),
+      jobTitle: "Desenvolvedora Full Stack",
+    },
+  });
+  // O CV no site leva a revisão no link, para o navegador baixar o novo.
+  await expect(
+    page.locator('#topo a[href^="/cv/curriculo.pdf?v="]'),
+  ).toHaveCount(1);
+
+  // O e2e sobe o container com a indexação liberada no endereço do teste.
+  const sitemap = await (await page.request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("/pt/</loc>");
+  expect(sitemap).toContain('hreflang="x-default"');
+  const robots = await (await page.request.get("/robots.txt")).text();
+  expect(robots).toContain("Disallow: /admin");
+  expect(robots).toMatch(/Sitemap: .*\/sitemap\.xml/);
+});
+
 test("o site oferece o currículo da publicação, em PDF e DOCX", async ({
   page,
 }) => {

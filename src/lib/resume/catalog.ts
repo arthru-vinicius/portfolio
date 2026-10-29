@@ -92,6 +92,9 @@ export type ResumeDownload = ResumeFile & {
  * @param options.sizes - O tamanho de cada arquivo, pelo nome, se já se sabe.
  * @param options.suffix - Acréscimo ao nome do arquivo salvo, como
  *   `rascunho`.
+ * @param options.revisionId - A revisão publicada. Vai no link como `?v=`:
+ *   o navegador guarda o arquivo por endereço, e o endereço novo depois de
+ *   publicar faz ele baixar a versão nova. A URL sem `?v=` continua valendo.
  * @returns Um link por arquivo.
  */
 export function resumeDownloads(
@@ -100,11 +103,14 @@ export function resumeDownloads(
     basePath: string;
     sizes?: ReadonlyMap<string, number>;
     suffix?: string;
+    revisionId?: number;
   },
 ): ResumeDownload[] {
+  const query =
+    options.revisionId === undefined ? "" : `?v=${options.revisionId}`;
   return resumeFiles.map((file) => ({
     ...file,
-    href: `${options.basePath}/${file.name}`,
+    href: `${options.basePath}/${file.name}${query}`,
     fileName: downloadFileName(displayName, file, options.suffix),
     size: options.sizes?.get(file.name) ?? null,
   }));
