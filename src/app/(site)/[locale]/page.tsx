@@ -10,7 +10,7 @@ import {
 } from "@/content/read-published";
 import {
   localeFromPath,
-  localePaths,
+  localeHomePath,
   locales,
   type Locale,
 } from "@/i18n/config";
@@ -71,7 +71,7 @@ function Placeholder({ locale }: { locale: Locale }) {
       <p className="text-lg text-ink-muted">{dict.placeholder.body}</p>
       <p>
         <a
-          href={`/${localePaths[other]}`}
+          href={localeHomePath(other)}
           hrefLang={other}
           lang={other}
           className="font-semibold text-accent underline-offset-4 hover:underline"

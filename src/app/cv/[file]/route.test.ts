@@ -67,15 +67,15 @@ describe("GET /cv/[file]", () => {
     expect(pdf.text).toContain("Ana Exemplo da Silva");
   });
 
-  it("entrega a planilha como download", async () => {
-    const response = await get("resume.xlsx");
+  it("entrega o DOCX como download", async () => {
+    const response = await get("resume.docx");
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe(
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     );
     expect(response.headers.get("content-disposition")).toBe(
-      'attachment; filename="ana-exemplo-resume.xlsx"',
+      'attachment; filename="ana-exemplo-resume.docx"',
     );
   });
 
@@ -102,7 +102,7 @@ describe("GET /cv/[file]", () => {
 
   it("responde 404 a outro nome de arquivo e sem nada publicado", async () => {
     expect((await get("..%2Fportfolio.db")).status).toBe(404);
-    expect((await get("curriculo.docx")).status).toBe(404);
+    expect((await get("curriculo.xlsx")).status).toBe(404);
 
     state.content = null;
     expect((await get("curriculo.pdf")).status).toBe(404);

@@ -58,7 +58,6 @@ vi.mock("@/lib/env", () => ({
 vi.mock("@/lib/db/database", () => ({ getDatabase: () => state.db }));
 // O gerador de verdade tem os próprios testes; aqui basta saber que ele rodou.
 vi.mock("@/lib/resume/render", () => ({
-  RESUME_FORMAT_VERSION: 1,
   renderPublicResumeFiles: vi.fn(
     async () => new Map([["curriculo.pdf", Buffer.from("pdf")]]),
   ),

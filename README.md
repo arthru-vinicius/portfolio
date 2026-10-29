@@ -1,7 +1,7 @@
 # portfolio
 
 Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.arthru.com**:
-site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e XLSX gerado
+site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e DOCX gerado
 a partir dele.
 
 > Em construção. O site, o painel e o currículo já funcionam; faltam o acabamento, a otimização
@@ -42,13 +42,18 @@ recusa a conexão de recarregamento automático vinda de outra origem.
 
 ## Site
 
-- **Endereços:** `/pt` e `/en`, a URL canônica de cada idioma. A raiz `/` leva ao idioma do
-  navegador (`Accept-Language`), com um redirecionamento temporário que varia com o cabeçalho.
-  Um endereço que não existe dá um 404 nos dois idiomas (`global-not-found`).
+- **Endereços:** `/pt/` e `/en/`, a URL canônica de cada idioma, com a barra no fim: o link de
+  uma seção fica `/pt/#experiencia`. A raiz `/` leva ao idioma do navegador (`Accept-Language`),
+  com um redirecionamento temporário que varia com o cabeçalho, e `/pt` leva a `/pt/` com um
+  permanente. Quem acrescenta a barra é o proxy, só nessas páginas: o Next não redireciona nada
+  (`skipTrailingSlashRedirect`), para o `/api/health` nunca ser redirecionado. Um endereço que
+  não existe dá um 404 nos dois idiomas (`global-not-found`).
 - **Conteúdo:** a última revisão publicada, só com os blocos e itens visíveis, na ordem do
-  painel. O cabeçalho monta o menu a partir dos blocos. Os textos longos aceitam um subconjunto
-  de Markdown (parágrafos, listas, negrito, itálico, código e links), que vira elemento React,
-  nunca HTML cru, e só aceita links `https:`, `http:` e `mailto:`.
+  painel. O menu do cabeçalho leva às seções principais (sobre, experiência, projetos, formação
+  e prêmios); habilidades, idiomas e blocos livres ficam só na página, e o contato fica com o
+  botão "Fale comigo", que no celular vira o último item do menu. Os textos longos aceitam um
+  subconjunto de Markdown (parágrafos, listas, negrito, itálico, código e links), que vira
+  elemento React, nunca HTML cru, e só aceita links `https:`, `http:` e `mailto:`.
 - **Tema:** segue o do sistema, e um botão troca entre sistema, claro e escuro. A escolha fica no
   `localStorage`, sem cookie, e um script curto no `<head>` a aplica antes da primeira pintura.
 - **Visual:** quase preto com verde, títulos grandes com degradê, uma rede de partículas atrás do
@@ -72,7 +77,7 @@ recusa a conexão de recarregamento automático vinda de outra origem.
 
 ## Currículo
 
-O currículo sai do mesmo conteúdo do site, em PDF e XLSX, em português e inglês, num formato
+O currículo sai do mesmo conteúdo do site, em PDF e DOCX, em português e inglês, num formato
 pensado para recrutadores e sistemas de triagem (ATS).
 
 - **O que entra:** o que está marcado "No currículo" em cada item (mesmo oculto no site), os
@@ -81,21 +86,23 @@ pensado para recrutadores e sistemas de triagem (ATS).
   idiomas. Experiências, cursos e prêmios vêm do mais recente para o mais antigo, e os meses saem
   como `MM/AAAA`.
 - **Um modelo, dois arquivos:** `buildResumeModel` monta o currículo de um idioma em texto puro
-  (o Markdown vira texto, e os links ficam com o endereço escrito), e os geradores só desenham
-  esse modelo.
+  (o Markdown vira texto, e os links ficam com o endereço escrito), e `layoutResume` o dispõe em
+  seções e linhas. Os dois geradores só desenham esse layout, então o PDF e o DOCX têm o mesmo
+  texto, na mesma ordem.
 - **PDF** (pdfkit): A4, uma coluna, sem tabela, imagem, cabeçalho ou rodapé de página. Texto real,
   com a Inter embutida (licença OFL, do Fontsource) e os acentos certos ao copiar. Sai marcado
   (tagged), com o idioma, título, autor, assunto e palavras-chave. Um caractere que a fonte não
   tem vira um equivalente, como `→` em `->`.
-- **XLSX** (exceljs): uma aba por seção, a de Perfil em `Campo | Valor`, cabeçalho congelado e
-  filtro, sem célula mesclada nem fórmula. As datas são datas de verdade (`mm/aaaa`), e o emprego
-  atual tem o fim vazio e "Atual: Sim". Listas ficam numa célula, um item por linha.
+- **DOCX** (docx): para quem precisa de um arquivo editável ou de um formato que a plataforma da
+  vaga aceite. Uma coluna, sem tabela nem caixa de texto, com os estilos do próprio Word (o nome
+  em Título 1, as seções em Título 2, listas com marcador de verdade), Calibri, o idioma do texto
+  e as propriedades do documento.
 - **Quando é gerado:** ao publicar, antes de gravar a revisão; se o gerador falhar, nada é
   publicado. Os quatro arquivos vão para `/data/cv/<revisão>-v<formato>/`, e os da revisão
   anterior são apagados. Se faltarem (uma revisão de antes do currículo, uma versão nova do
   formato), a rota os gera no primeiro pedido.
-- **Endereços fixos:** `/cv/curriculo.pdf`, `/cv/curriculo.xlsx`, `/cv/resume.pdf` e
-  `/cv/resume.xlsx`. A resposta sai com `Cache-Control: no-cache` e a ETag da revisão: o
+- **Endereços fixos:** `/cv/curriculo.pdf`, `/cv/curriculo.docx`, `/cv/resume.pdf` e
+  `/cv/resume.docx`. A resposta sai com `Cache-Control: no-cache` e a ETag da revisão: o
   navegador e a Cloudflare conferem antes de usar a cópia e nunca servem um currículo velho.
 - **No site:** o botão "Baixar currículo", no topo e no rodapé, abre a lista dos arquivos nos dois
   idiomas, com o tamanho de cada um.

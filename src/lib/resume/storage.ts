@@ -14,7 +14,7 @@ import path from "node:path";
 import type { PublicDocument } from "@/content/public-projection";
 
 import { resumeFiles, type ResumeFile } from "./catalog";
-import { RESUME_FORMAT_VERSION, renderPublicResumeFiles } from "./render";
+import { RESUME_FORMAT_VERSION } from "./version";
 
 /** A revisão publicada de onde saem os arquivos. */
 export type ResumeSource = { revisionId: number; document: PublicDocument };
@@ -56,7 +56,10 @@ async function pruneOlderFolders(
       id < revisionId ||
       (id === revisionId && entry !== folderName(revisionId));
     if (stale) {
-      await rm(path.join(root, entry), { recursive: true, force: true });
+      await rm(path.join(root, entry), {
+        recursive: true,
+        force: true,
+      });
     }
   }
 }
@@ -90,7 +93,8 @@ async function readSizes(folder: string): Promise<ResumeFileSizes | null> {
   const sizes = new Map<string, number>();
   for (const file of resumeFiles) {
     try {
-      sizes.set(file.name, (await stat(path.join(folder, file.name))).size);
+      const info = await stat(path.join(folder, file.name));
+      sizes.set(file.name, info.size);
     } catch {
       return null;
     }
@@ -126,6 +130,9 @@ export async function ensureResumeFiles(
     if (sizes !== null) {
       return sizes;
     }
+    // Os geradores só carregam quando há o que gerar: a página do site lê
+    // os tamanhos a cada visita e não precisa do pdfkit para isso.
+    const { renderPublicResumeFiles } = await import("./render");
     const files = await renderPublicResumeFiles(source.document);
     await saveResumeFiles(root, source.revisionId, files);
     console.info(`[cv] arquivos da revisão ${source.revisionId} gerados`);

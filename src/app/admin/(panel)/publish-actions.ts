@@ -48,7 +48,7 @@ async function storeResumeFiles(
 
 /**
  * Publica o rascunho: confere se ele pode ir ao ar, gera o currículo em PDF e
- * XLSX, grava uma revisão nova e expira o cache do site, que mostra a revisão
+ * DOCX, grava uma revisão nova e expira o cache do site, que mostra a revisão
  * já na próxima visita, sem deploy.
  *
  * Publica exatamente o que a página mostrava: se o rascunho mudou desde que

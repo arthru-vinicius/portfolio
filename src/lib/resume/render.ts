@@ -5,14 +5,7 @@ import type { PublicDocument } from "@/content/public-projection";
 import { resumeFiles, type ResumeFile } from "./catalog";
 import { buildResumeModel, type ResumeOptions } from "./model";
 import { renderResumePdf } from "./pdf";
-import { renderResumeXlsx } from "./xlsx";
-
-/**
- * Versão do formato dos arquivos. Sobe quando o gerador muda o que sai no
- * arquivo: os arquivos gravados com a versão anterior deixam de valer e são
- * gerados de novo no primeiro pedido.
- */
-export const RESUME_FORMAT_VERSION = 1;
+import { renderResumeDocx } from "./docx";
 
 /**
  * Gera um arquivo do currículo.
@@ -30,7 +23,7 @@ export async function renderResumeFile(
   const model = buildResumeModel(document, file.locale, options);
   return file.format === "pdf"
     ? renderResumePdf(model)
-    : renderResumeXlsx(model);
+    : renderResumeDocx(model);
 }
 
 /**

@@ -86,7 +86,7 @@ export type ResumeLanguage = { name: string; level: string };
 
 /**
  * O currículo num idioma, em texto puro e na ordem final. Os geradores de PDF
- * e de XLSX só desenham esta estrutura; nenhum dos dois decide o que entra.
+ * e de DOCX só desenham esta estrutura; nenhum dos dois decide o que entra.
  */
 export type ResumeModel = {
   locale: Locale;

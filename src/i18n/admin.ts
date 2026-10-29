@@ -202,7 +202,7 @@ export const adminMessages = {
     collapse: (name: string) => `Fechar ${name}`,
     visible: "Visível no site",
     inResume: "No currículo",
-    inResumeHint: "Entra no currículo em PDF e XLSX.",
+    inResumeHint: "Entra no currículo em PDF e DOCX.",
     hidden: "Oculto no site",
     missingTranslation: "Tradução faltando",
     portuguese: "Português",
@@ -363,7 +363,7 @@ export const adminMessages = {
     title: "Currículo",
     heading: "Currículo",
     intro:
-      "O currículo em PDF e XLSX sai do mesmo conteúdo do site. O que entra nele é marcado em cada item, em “No currículo”.",
+      "O currículo em PDF e DOCX sai do mesmo conteúdo do site. O que entra nele é marcado em cada item, em “No currículo”.",
     downloadsHeading: "Baixar o rascunho",
     downloadsIntro:
       "Gerados agora, a partir do rascunho salvo, para conferir antes de publicar. O site passa a oferecer os arquivos novos quando você publica.",

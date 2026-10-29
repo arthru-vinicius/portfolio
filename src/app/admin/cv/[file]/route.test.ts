@@ -121,6 +121,6 @@ describe("GET /admin/cv/[file]", () => {
     await expect(get("curriculo.pdf", "?full=1")).rejects.toBeInstanceOf(
       NotFoundSignal,
     );
-    await expect(get("curriculo.docx")).rejects.toBeInstanceOf(NotFoundSignal);
+    await expect(get("curriculo.xlsx")).rejects.toBeInstanceOf(NotFoundSignal);
   });
 });

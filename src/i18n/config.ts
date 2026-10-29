@@ -23,6 +23,17 @@ export const localePaths: Readonly<Record<Locale, string>> = {
 };
 
 /**
+ * O endereço da página de um idioma, com a barra no fim: `/pt/`. Assim o link
+ * de uma seção fica `/pt/#experiencia`, e não `/pt#experiencia`.
+ *
+ * @param locale - O idioma.
+ * @returns O caminho da página.
+ */
+export function localeHomePath(locale: Locale): string {
+  return `/${localePaths[locale]}/`;
+}
+
+/**
  * Diz qual idioma um segmento de URL representa.
  *
  * @param segment - O primeiro segmento do caminho, como `pt`.

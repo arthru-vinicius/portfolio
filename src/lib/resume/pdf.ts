@@ -5,36 +5,40 @@ import path from "node:path";
 
 import PDFDocument from "pdfkit";
 
-import { getDictionary } from "@/i18n/dictionaries";
-import { fillTemplate } from "@/i18n/template";
-
 import { fitToFont } from "./glyphs";
-import { joinParts, type ResumeModel } from "./model";
-import { displayUrl } from "./plain-text";
-
-/**
- * A Inter (licença OFL), em WOFF, do pacote do Fontsource. O caminho parte da
- * raiz do app, e o build do Next copia os arquivos para a imagem.
- */
-const FONT_FILES = {
-  regular: path.join(
-    process.cwd(),
-    "node_modules/@fontsource/inter/files/inter-latin-400-normal.woff",
-  ),
-  bold: path.join(
-    process.cwd(),
-    "node_modules/@fontsource/inter/files/inter-latin-700-normal.woff",
-  ),
-};
+import {
+  layoutResume,
+  type ResumeLayout,
+  type ResumeLine,
+  type ResumeLinkRun,
+} from "./layout";
+import type { ResumeModel } from "./model";
 
 type Fonts = { regular: Buffer; bold: Buffer };
 
 let fonts: Fonts | null = null;
 
+/**
+ * Lê a Inter (licença OFL), em WOFF, do pacote do Fontsource.
+ *
+ * Cada caminho fica escrito por inteiro dentro do `readFileSync`: assim o
+ * build do Next sabe exatamente quais arquivos levar para a imagem. Com o
+ * caminho numa variável, ele não sabe e leva o projeto inteiro.
+ */
 function loadFonts(): Fonts {
   fonts ??= {
-    regular: readFileSync(FONT_FILES.regular),
-    bold: readFileSync(FONT_FILES.bold),
+    regular: readFileSync(
+      path.join(
+        process.cwd(),
+        "node_modules/@fontsource/inter/files/inter-latin-400-normal.woff",
+      ),
+    ),
+    bold: readFileSync(
+      path.join(
+        process.cwd(),
+        "node_modules/@fontsource/inter/files/inter-latin-700-normal.woff",
+      ),
+    ),
   };
   return fonts;
 }
@@ -79,13 +83,11 @@ type Struct = PDFKit.PDFStructureElement;
  */
 class ResumeWriter {
   private readonly doc: PDFKit.PDFDocument;
-  private readonly model: ResumeModel;
-  private readonly labels: ReturnType<typeof getDictionary>["resume"];
+  private readonly layout: ResumeLayout;
 
-  constructor(doc: PDFKit.PDFDocument, model: ResumeModel) {
+  constructor(doc: PDFKit.PDFDocument, layout: ResumeLayout) {
     this.doc = doc;
-    this.model = model;
-    this.labels = getDictionary(model.locale).resume;
+    this.layout = layout;
   }
 
   private get left(): number {
@@ -204,10 +206,7 @@ class ResumeWriter {
   }
 
   /** Uma linha de links visíveis, como `Código: github.com/ana/app`. */
-  private linkLine(
-    parent: Struct,
-    links: readonly { label: string | null; url: string; display: string }[],
-  ): void {
+  private linkLine(parent: Struct, links: readonly ResumeLinkRun[]): void {
     const segments = links.flatMap((link, index) => [
       ...(link.label === null
         ? []
@@ -274,189 +273,70 @@ class ResumeWriter {
   }
 
   private identity(): void {
-    const { model } = this;
+    const { layout } = this;
     const header = this.doc.struct("Sect");
     this.doc.addStructure(header);
     header.add(
       this.doc.struct("H1", {}, () => {
         this.style(BOLD, SIZES.name, COLORS.text);
-        this.doc.text(`${fitToFont(model.fullName)} `, this.left, this.doc.y, {
+        this.doc.text(`${fitToFont(layout.name)} `, this.left, this.doc.y, {
           width: this.width,
         });
       }),
     );
     this.doc.moveDown(0.1);
-    this.paragraph(header, model.headline, {
+    this.paragraph(header, layout.headline, {
       size: SIZES.headline,
       color: COLORS.accent,
       gap: 0.3,
     });
-    this.paragraph(
-      header,
-      joinParts([model.location, model.email, model.phone]),
-      { size: SIZES.meta, color: COLORS.muted, gap: 0.1 },
-    );
-    this.linkLine(
-      header,
-      model.links.map((link) => ({ ...link, label: null })),
-    );
+    this.paragraph(header, layout.contact, {
+      size: SIZES.meta,
+      color: COLORS.muted,
+      gap: 0.1,
+    });
+    this.linkLine(header, layout.links);
     header.end();
   }
 
+  private line(section: Struct, line: ResumeLine, first: boolean): void {
+    switch (line.kind) {
+      case "item":
+        if (!first) {
+          this.doc.moveDown(0.4);
+        }
+        this.ensureSpace(KEEP_ITEM_HEADER);
+        this.labeledParagraph(section, line.lead, line.rest);
+        return;
+      case "pair":
+        this.labeledParagraph(section, line.lead, line.rest);
+        return;
+      case "meta":
+        this.paragraph(section, line.text, {
+          size: SIZES.meta,
+          color: COLORS.muted,
+        });
+        return;
+      case "text":
+        this.paragraph(section, line.text);
+        return;
+      case "bullets":
+        this.bulletList(section, line.items);
+        return;
+      case "links":
+        this.linkLine(section, line.links);
+        return;
+    }
+  }
+
   write(): void {
-    const { model, labels } = this;
     this.identity();
-
-    if (model.summary.length > 0) {
-      this.section(labels.sections.summary, (section) => {
-        for (const line of model.summary) {
-          this.paragraph(section, line);
-        }
-      });
-    }
-
-    if (model.experience.length > 0) {
-      this.section(labels.sections.experience, (section) => {
-        model.experience.forEach((item, index) => {
-          if (index > 0) {
-            this.doc.moveDown(0.45);
-          }
-          this.ensureSpace(KEEP_ITEM_HEADER);
-          this.labeledParagraph(
-            section,
-            item.role,
-            item.company === "" ? "" : `· ${item.company}`,
-          );
-          this.paragraph(
-            section,
-            joinParts([item.location, item.workMode, item.period]),
-            { size: SIZES.meta, color: COLORS.muted },
-          );
-          this.bulletList(section, item.highlights);
-          if (item.technologies.length > 0) {
-            this.paragraph(
-              section,
-              `${labels.technologies}: ${item.technologies.join(", ")}`,
-              { size: SIZES.meta, color: COLORS.muted },
-            );
-          }
-        });
-      });
-    }
-
-    if (model.skills.length > 0) {
-      this.section(labels.sections.skills, (section) => {
-        for (const group of model.skills) {
-          this.labeledParagraph(
-            section,
-            `${group.name}:`,
-            group.skills.join(", "),
-          );
-        }
-      });
-    }
-
-    if (model.projects.length > 0) {
-      this.section(labels.sections.projects, (section) => {
-        model.projects.forEach((project, index) => {
-          if (index > 0) {
-            this.doc.moveDown(0.35);
-          }
-          this.ensureSpace(KEEP_ITEM_HEADER);
-          this.labeledParagraph(
-            section,
-            project.name,
-            project.summary === "" ? "" : `· ${project.summary}`,
-          );
-          if (project.technologies.length > 0) {
-            this.paragraph(
-              section,
-              `${labels.technologies}: ${project.technologies.join(", ")}`,
-              { size: SIZES.meta, color: COLORS.muted },
-            );
-          }
-          this.linkLine(
-            section,
-            [
-              { label: labels.code, url: project.repositoryUrl },
-              { label: labels.website, url: project.websiteUrl },
-            ].flatMap(({ label, url }) =>
-              url === null ? [] : [{ label, url, display: displayUrl(url) }],
-            ),
-          );
-        });
-      });
-    }
-
-    if (model.education.length > 0) {
-      this.section(labels.sections.education, (section) => {
-        model.education.forEach((item, index) => {
-          if (index > 0) {
-            this.doc.moveDown(0.35);
-          }
-          this.ensureSpace(KEEP_ITEM_HEADER);
-          this.labeledParagraph(section, item.degree, "");
-          this.paragraph(
-            section,
-            joinParts([item.institution, item.location, item.period]),
-            { size: SIZES.meta, color: COLORS.muted },
-          );
-          if (item.status !== null) {
-            this.paragraph(section, item.status, {
-              size: SIZES.meta,
-              color: COLORS.muted,
-            });
-          }
-          for (const line of item.notes) {
-            this.paragraph(section, line);
-          }
-        });
-      });
-    }
-
-    if (model.awards.length > 0) {
-      this.section(labels.sections.awards, (section) => {
-        model.awards.forEach((award, index) => {
-          if (index > 0) {
-            this.doc.moveDown(0.35);
-          }
-          this.ensureSpace(KEEP_ITEM_HEADER);
-          this.labeledParagraph(section, award.title, "");
-          this.paragraph(section, joinParts([award.issuer, award.dateLabel]), {
-            size: SIZES.meta,
-            color: COLORS.muted,
-          });
-          for (const line of award.description) {
-            this.paragraph(section, line);
-          }
-        });
-      });
-    }
-
-    if (model.languages.length > 0) {
-      this.section(labels.sections.languages, (section) => {
-        for (const language of model.languages) {
-          this.labeledParagraph(section, `${language.name}:`, language.level);
-        }
+    for (const { title, lines } of this.layout.sections) {
+      this.section(title, (section) => {
+        lines.forEach((line, index) => this.line(section, line, index === 0));
       });
     }
   }
-}
-
-/** As palavras-chave do arquivo: habilidades e tecnologias, sem repetir. */
-function keywordsOf(model: ResumeModel): string[] {
-  const seen = new Set<string>();
-  return [
-    ...model.skills.flatMap((group) => group.skills),
-    ...model.experience.flatMap((item) => item.technologies),
-  ].filter((keyword) => {
-    const key = keyword.toLowerCase();
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
 }
 
 /**
@@ -475,7 +355,7 @@ function keywordsOf(model: ResumeModel): string[] {
  */
 export async function renderResumePdf(model: ResumeModel): Promise<Buffer> {
   const { regular, bold } = loadFonts();
-  const labels = getDictionary(model.locale).resume;
+  const layout = layoutResume(model);
   const doc = new PDFDocument({
     size: "A4",
     margins: MARGINS,
@@ -484,13 +364,13 @@ export async function renderResumePdf(model: ResumeModel): Promise<Buffer> {
     font: regular as unknown as string,
     pdfVersion: "1.7",
     tagged: true,
-    lang: model.locale,
+    lang: layout.lang,
     displayTitle: true,
     info: {
-      Title: fillTemplate(labels.documentTitle, { name: model.fullName }),
-      Author: model.fullName,
-      Subject: model.headline,
-      Keywords: keywordsOf(model).join(", "),
+      Title: layout.title,
+      Author: layout.author,
+      Subject: layout.subject,
+      Keywords: layout.keywords.join(", "),
     },
   });
   doc.registerFont(REGULAR, regular);
@@ -502,7 +382,7 @@ export async function renderResumePdf(model: ResumeModel): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
   });
-  new ResumeWriter(doc, model).write();
+  new ResumeWriter(doc, layout).write();
   doc.end();
   return finished;
 }

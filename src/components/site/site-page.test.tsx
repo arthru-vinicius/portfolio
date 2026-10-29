@@ -40,6 +40,18 @@ describe("SitePage", () => {
     }
   });
 
+  it("leva o menu só às seções principais, e o contato ao botão", () => {
+    const html = render("pt-BR");
+    const menu = /<nav aria-label="Seções do site"[\s\S]*?<\/nav>/.exec(html);
+
+    expect(menu?.[0]).toContain(`href="#${ptBR.anchors.experience}"`);
+    expect(menu?.[0]).not.toContain(`href="#${ptBR.anchors.contact}"`);
+    for (const anchor of [ptBR.anchors.skills, ptBR.anchors.languages]) {
+      expect(html).toContain(`id="${anchor}"`);
+      expect(html).not.toContain(`href="#${anchor}"`);
+    }
+  });
+
   it("deixa de fora o que está oculto no painel", () => {
     const html = render("pt-BR");
 
@@ -79,9 +91,9 @@ describe("SitePage", () => {
           basePath: "/cv",
           sizes: new Map([
             ["resume.pdf", 51_800],
-            ["resume.xlsx", 9_200],
+            ["resume.docx", 9_200],
             ["curriculo.pdf", 52_300],
-            ["curriculo.xlsx", 9_300],
+            ["curriculo.docx", 9_300],
           ]),
         })}
       />,

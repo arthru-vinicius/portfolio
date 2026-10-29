@@ -1,4 +1,4 @@
-import { localePaths, locales, type Locale } from "@/i18n/config";
+import { localeHomePath, locales, type Locale } from "@/i18n/config";
 
 import { GlobeIcon } from "./icons";
 import { MobileMenu, type NavItem } from "./mobile-menu";
@@ -6,11 +6,13 @@ import type { SiteContext } from "./site-context";
 import { ThemeToggle } from "./theme-toggle";
 
 /**
- * Cabeçalho fixo do site: o nome, as seções, o tema, o idioma e o botão de
- * contato. Abaixo de 1280 px, as seções vão para o menu.
+ * Cabeçalho fixo do site: o nome, as seções principais, o tema, o idioma e o
+ * botão "Fale comigo", que leva ao contato. Abaixo de 1280 px, as seções vão
+ * para o menu, que termina com o contato: abaixo de 640 px, o botão sai do
+ * cabeçalho.
  *
  * @param props.brand - O nome curto que abre o cabeçalho.
- * @param props.items - As seções, na ordem da página.
+ * @param props.items - As seções do menu, na ordem da página.
  * @param props.contactHref - A âncora da seção de contato.
  * @param props.context - Idioma e textos da página.
  */
@@ -58,7 +60,7 @@ export function SiteHeader({
         </nav>
         <ThemeToggle labels={dict.theme} />
         <a
-          href={`/${localePaths[other]}`}
+          href={localeHomePath(other)}
           hrefLang={other}
           lang={other}
           aria-label={dict.language.switchTo}
@@ -75,7 +77,13 @@ export function SiteHeader({
           {dict.site.contactCta}
         </a>
         <div className="xl:hidden">
-          <MobileMenu items={items} label={dict.site.menu} />
+          <MobileMenu
+            items={[
+              ...items,
+              { href: contactHref, label: dict.site.contactCta },
+            ]}
+            label={dict.site.menu}
+          />
         </div>
       </div>
     </header>

@@ -1,4 +1,4 @@
-import { localePaths } from "@/i18n/config";
+import { localeHomePath } from "@/i18n/config";
 import { en } from "@/i18n/dictionaries/en";
 import { ptBR } from "@/i18n/dictionaries/pt-BR";
 
@@ -20,7 +20,7 @@ export function NotFoundContent() {
           {ptBR.notFound.title}
         </h1>
         <p className="text-lg text-ink-muted">{ptBR.notFound.body}</p>
-        <a href={`/${localePaths["pt-BR"]}`} className={homeLink}>
+        <a href={localeHomePath("pt-BR")} className={homeLink}>
           {ptBR.notFound.home}
         </a>
       </section>
@@ -29,7 +29,7 @@ export function NotFoundContent() {
           {en.notFound.title}
         </h2>
         <p className="text-ink-muted">{en.notFound.body}</p>
-        <a href={`/${localePaths.en}`} className={homeLink}>
+        <a href={localeHomePath("en")} className={homeLink}>
           {en.notFound.home}
         </a>
       </section>

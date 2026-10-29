@@ -3,7 +3,7 @@ import { locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
 /** Os formatos do currículo. */
-export const resumeFormats = ["pdf", "xlsx"] as const;
+export const resumeFormats = ["pdf", "docx"] as const;
 
 /** Um formato do currículo. */
 export type ResumeFormat = (typeof resumeFormats)[number];
@@ -11,7 +11,7 @@ export type ResumeFormat = (typeof resumeFormats)[number];
 /** Tipo de cada formato, para o `Content-Type` e o atributo `type` do link. */
 export const resumeContentTypes: Readonly<Record<ResumeFormat, string>> = {
   pdf: "application/pdf",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
 /**

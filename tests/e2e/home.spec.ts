@@ -11,7 +11,7 @@ test.describe("idiomas", () => {
     const portuguese = await request.get("/", { maxRedirects: 0 });
     expect(portuguese.status()).toBe(307);
     expect(new URL(portuguese.headers()["location"] ?? "").pathname).toBe(
-      "/pt",
+      "/pt/",
     );
     expect(portuguese.headers()["vary"]).toBe("Accept-Language");
 
@@ -19,14 +19,22 @@ test.describe("idiomas", () => {
       maxRedirects: 0,
       headers: { "accept-language": "en-US,en;q=0.9" },
     });
-    expect(new URL(english.headers()["location"] ?? "").pathname).toBe("/en");
+    expect(new URL(english.headers()["location"] ?? "").pathname).toBe("/en/");
+  });
+
+  test("a página do idioma mora com a barra no fim", async ({ request }) => {
+    const response = await request.get("/pt?ref=1", { maxRedirects: 0 });
+
+    expect(response.status()).toBe(308);
+    expect(new URL(response.headers()["location"] ?? "").pathname).toBe("/pt/");
+    expect(new URL(response.headers()["location"] ?? "").search).toBe("?ref=1");
   });
 
   test("cada idioma tem a sua página, marcada com o idioma", async ({
     request,
   }) => {
-    const portuguese = await request.get("/pt");
-    const english = await request.get("/en");
+    const portuguese = await request.get("/pt/");
+    const english = await request.get("/en/");
 
     expect(portuguese.status()).toBe(200);
     expect(await portuguese.text()).toContain('<html lang="pt-BR"');
@@ -52,14 +60,14 @@ test.describe("idiomas", () => {
 // teste e com a indexação liberada, para exercitar os dois lados da regra.
 test.describe("indexação", () => {
   test("no host do PUBLIC_ORIGIN, permite indexar", async ({ request }) => {
-    const response = await request.get("/pt");
+    const response = await request.get("/pt/");
 
     expect(response.status()).toBe(200);
     expect(response.headers()["x-robots-tag"]).toBeUndefined();
   });
 
   test("em outro host, pede para não indexar", async ({ request }) => {
-    const response = await request.get("/pt", {
+    const response = await request.get("/pt/", {
       headers: { host: "outro-endereco.example" },
     });
 

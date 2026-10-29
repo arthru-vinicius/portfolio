@@ -7,7 +7,7 @@ import {
   parseResumeFileName,
   resumeContentTypes,
 } from "@/lib/resume/catalog";
-import { RESUME_FORMAT_VERSION } from "@/lib/resume/render";
+import { RESUME_FORMAT_VERSION } from "@/lib/resume/version";
 import { readResumeFile, resumeDirectoryFor } from "@/lib/resume/storage";
 
 function notFound(): Response {
@@ -25,8 +25,8 @@ function matchesEtag(header: string | null, etag: string): boolean {
 }
 
 /**
- * Entrega o currículo publicado: `/cv/curriculo.pdf`, `/cv/curriculo.xlsx`,
- * `/cv/resume.pdf` e `/cv/resume.xlsx`.
+ * Entrega o currículo publicado: `/cv/curriculo.pdf`, `/cv/curriculo.docx`,
+ * `/cv/resume.pdf` e `/cv/resume.docx`.
  *
  * A URL não muda a cada publicação. Por isso a resposta sai com
  * `Cache-Control: no-cache` e a ETag da revisão: a Cloudflare e o navegador
@@ -66,7 +66,7 @@ export async function GET(
     content,
     file,
   );
-  // O PDF abre no navegador; a planilha baixa. O link do site tem `download`.
+  // O PDF abre no navegador; o DOCX baixa. O link do site tem `download`.
   const disposition = file.format === "pdf" ? "inline" : "attachment";
   return new Response(new Uint8Array(data), {
     headers: {

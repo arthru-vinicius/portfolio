@@ -15,14 +15,13 @@ const render = vi.hoisted(() => ({
 }));
 
 vi.mock("./render", () => ({
-  RESUME_FORMAT_VERSION: 1,
   renderPublicResumeFiles: async () => {
     render.calls++;
     return new Map([
       ["curriculo.pdf", Buffer.from("pdf pt")],
-      ["curriculo.xlsx", Buffer.from("xlsx pt")],
+      ["curriculo.docx", Buffer.from("docx pt")],
       ["resume.pdf", Buffer.from("pdf en!")],
-      ["resume.xlsx", Buffer.from("xlsx en")],
+      ["resume.docx", Buffer.from("docx en")],
     ]);
   },
 }));
@@ -73,15 +72,15 @@ describe("ensureResumeFiles", () => {
 
     expect(Object.fromEntries(sizes)).toEqual({
       "curriculo.pdf": 6,
-      "curriculo.xlsx": 7,
+      "curriculo.docx": 7,
       "resume.pdf": 7,
-      "resume.xlsx": 7,
+      "resume.docx": 7,
     });
     expect((await readdir(path.join(root, "3-v1"))).sort()).toEqual([
+      "curriculo.docx",
       "curriculo.pdf",
-      "curriculo.xlsx",
+      "resume.docx",
       "resume.pdf",
-      "resume.xlsx",
     ]);
   });
 
@@ -125,9 +124,9 @@ describe("readResumeFile", () => {
     const data = await readResumeFile(
       root,
       source(5),
-      fileNamed("curriculo.xlsx"),
+      fileNamed("curriculo.docx"),
     );
 
-    expect(data.toString()).toBe("xlsx pt");
+    expect(data.toString()).toBe("docx pt");
   });
 });

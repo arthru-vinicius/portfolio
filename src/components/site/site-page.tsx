@@ -37,6 +37,19 @@ const footerButtonClass =
 
 type PlannedSection = { block: Block; anchor: string; title: string };
 
+/**
+ * As seções que entram no menu do cabeçalho: as principais. Habilidades e
+ * idiomas são curtas, e os blocos livres são complementos; as três continuam
+ * na página. O contato fica com o botão "Fale comigo".
+ */
+const NAV_BLOCK_TYPES: ReadonlySet<Block["type"]> = new Set([
+  "about",
+  "experience",
+  "projects",
+  "education",
+  "awards",
+]);
+
 /** Dá a cada bloco a âncora e o título que ele tem nesta página. */
 function planSections(
   blocks: readonly Block[],
@@ -218,13 +231,9 @@ export function SitePage({
           ? (link.label ?? link.url)
           : dict.links[link.kind],
     }));
-  const navItems: NavItem[] = [
-    ...sections.map(({ anchor, title }) => ({
-      href: `#${anchor}`,
-      label: title,
-    })),
-    { href: `#${contactAnchor}`, label: dict.sections.contact },
-  ];
+  const navItems: NavItem[] = sections
+    .filter(({ block }) => NAV_BLOCK_TYPES.has(block.type))
+    .map(({ anchor, title }) => ({ href: `#${anchor}`, label: title }));
   const brand = profile.displayName.split(/\s+/)[0] ?? profile.displayName;
   const resumeGroups =
     resume === undefined ? [] : resumeMenuGroups(resume, locale);
