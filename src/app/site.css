@@ -16,6 +16,7 @@
   --site-accent: #047857;
   --site-accent-2: #0e7490;
   --site-on-accent: #ffffff;
+  --site-alert: #b42318;
   color-scheme: light;
 }
 
@@ -31,6 +32,7 @@
     --site-accent: #34d399;
     --site-accent-2: #2dd4bf;
     --site-on-accent: #03140c;
+    --site-alert: #f97066;
     color-scheme: dark;
   }
 }
@@ -46,6 +48,7 @@
   --site-accent: #34d399;
   --site-accent-2: #2dd4bf;
   --site-on-accent: #03140c;
+  --site-alert: #f97066;
   color-scheme: dark;
 }
 
@@ -81,6 +84,35 @@ html.site {
     color-mix(in srgb, var(--site-accent) 14%, transparent),
     transparent 70%
   );
+}
+
+/* Brilho girando em volta da foto, atrás dela. */
+@property --site-spin {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.site-photo::before {
+  content: "";
+  position: absolute;
+  inset: -0.75rem;
+  border-radius: 2.25rem;
+  background: conic-gradient(
+    from var(--site-spin),
+    var(--site-accent),
+    transparent 30%,
+    var(--site-accent-2),
+    transparent 70%,
+    var(--site-accent)
+  );
+  filter: blur(18px);
+  opacity: 0.5;
+  animation: site-spin 10s linear infinite;
+}
+@keyframes site-spin {
+  to {
+    --site-spin: 360deg;
+  }
 }
 
 /* Cartões: a borda ganha o acento e o cartão sobe um pouco no hover. */
@@ -164,7 +196,8 @@ html.site {
     transition: none;
     transform: none;
   }
-  .site-marquee-track {
+  .site-marquee-track,
+  .site-photo::before {
     animation: none;
   }
 }

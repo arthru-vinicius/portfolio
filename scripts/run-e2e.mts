@@ -121,6 +121,10 @@ function startContainer(deployDir: string): void {
       `TURNSTILE_SECRET_KEY=${admin.turnstileSecretKey}`,
       "--env",
       "MAIL_RELAY_URL=",
+      // O relay só aceita o IP do servidor: aqui o formulário de contato só
+      // registra no log.
+      "--env",
+      "MAIL_RELAY_DRY_RUN=true",
       "--env",
       "DEPLOY_STATUS_FILE=/deploy/last-deploy.json",
       "--publish",

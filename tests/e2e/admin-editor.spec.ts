@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import sharp from "sharp";
 import { parse, stringify } from "yaml";
 
 import { adminMessages } from "../../src/i18n/admin";
@@ -242,6 +243,22 @@ test("publica o rascunho depois de confirmar", async ({ page }) => {
   await page
     .getByLabel(fields.displayName, { exact: true })
     .fill(`Ana Publicada ${test.info().retry}`);
+  // A foto entra no rascunho junto com o perfil.
+  await page.getByLabel(adminMessages.profile.photoChoose).setInputFiles({
+    name: "foto.jpg",
+    mimeType: "image/jpeg",
+    buffer: await sharp({
+      create: { width: 900, height: 900, channels: 3, background: "#2d8f6f" },
+    })
+      .jpeg()
+      .toBuffer(),
+  });
+  await expect(
+    page.getByText(adminMessages.profile.photoUploaded),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: adminMessages.profile.photoPreview }),
+  ).toBeVisible();
   await save(page);
   await openSection(page, nav.home);
 
@@ -266,6 +283,13 @@ test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   await page.goto("/pt");
   await expect(title).toContainText(`Ana Publicada ${test.info().retry}`);
   await expect(title).toContainText("Desenvolvedora Full Stack");
+  const photo = page.getByRole("img", {
+    name: `Foto de Ana Publicada ${test.info().retry}`,
+  });
+  await expect(photo).toBeVisible();
+  await expect
+    .poll(() => photo.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .toBeGreaterThan(0);
   await expect(
     page.getByRole("heading", { level: 2, name: ptBR.sections.experience }),
   ).toBeVisible();
@@ -281,6 +305,31 @@ test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   await page.getByRole("link", { name: ptBR.language.switchTo }).click();
   await expect(page).toHaveURL(/\/en$/);
   await expect(title).toContainText("Full Stack Developer");
+});
+
+test("envia uma mensagem pelo formulário de contato", async ({ page }) => {
+  const form = ptBR.contactForm;
+  const token = page.locator('input[name="turnstileToken"]');
+  await page.goto("/pt#contato");
+  await page.getByLabel(form.name, { exact: true }).fill("Visitante do e2e");
+  await page.getByLabel(form.email, { exact: true }).fill("sem-arroba");
+  await page
+    .getByLabel(form.message, { exact: true })
+    .fill("Mensagem de teste.");
+  // A chave de teste do Turnstile devolve o token sozinha.
+  await expect(token).not.toHaveValue("");
+  await page.getByRole("button", { name: form.submit }).click();
+
+  await expect(page.getByText(form.emailError)).toBeVisible();
+  const email = page.getByLabel(form.email, { exact: true });
+  await expect(email).toBeFocused();
+  await expect(email).toHaveAttribute("aria-invalid", "true");
+
+  await email.fill("visitante@example.com");
+  await expect(token).not.toHaveValue("");
+  await page.getByRole("button", { name: form.submit }).click();
+  await expect(page.getByRole("status").getByText(form.sent)).toBeVisible();
+  await expect(page.getByLabel(form.name, { exact: true })).toHaveValue("");
 });
 
 test("aponta o que falta publicar e restaura a revisão do histórico", async ({

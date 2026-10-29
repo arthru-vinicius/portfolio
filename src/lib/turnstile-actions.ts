@@ -7,3 +7,6 @@
  * (no servidor) usam o mesmo valor.
  */
 export const ADMIN_LOGIN_TURNSTILE_ACTION = "admin-login";
+
+/** Ação do widget do Turnstile no formulário de contato do site. */
+export const CONTACT_TURNSTILE_ACTION = "contact";

@@ -49,6 +49,12 @@ const SERVER_ACTIONS: Record<
     load: () => import("./login/actions"),
     actions: { login: "public" },
   },
+  // O contato é do site: público, protegido pelo limite por IP, pelo
+  // campo-armadilha e pelo Turnstile.
+  "src/app/(site)/[locale]/contact-actions.ts": {
+    load: () => import("../(site)/[locale]/contact-actions"),
+    actions: { sendContactMessage: "public" },
+  },
   "src/app/admin/(panel)/actions.ts": {
     load: () => import("./(panel)/actions"),
     actions: { logout: "admin" },

@@ -25,6 +25,8 @@ import { adminMessages } from "@/i18n/admin";
 
 import { saveProfile } from "../content-actions";
 
+import { PhotoField } from "./photo-field";
+
 const { fields, linkKinds, profile: messages } = adminMessages;
 
 const kindOptions = socialLinkKinds.map((kind) => ({
@@ -108,6 +110,19 @@ export function ProfileEditor({
             value={profile.location}
             onChange={(value) => set("location", value)}
             errors={errors}
+          />
+        </section>
+
+        <section
+          aria-labelledby="profile-photo"
+          className={`${cardClass} flex flex-col gap-6`}
+        >
+          <h2 id="profile-photo" className="text-lg font-semibold">
+            {messages.photo}
+          </h2>
+          <PhotoField
+            value={profile.photo}
+            onChange={(photo) => set("photo", photo)}
           />
         </section>
 

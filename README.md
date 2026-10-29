@@ -57,6 +57,18 @@ recusa a conexão de recarregamento automático vinda de outra origem.
   pacotes do Fontsource e são servidas pelo próprio site: o build não depende do Google Fonts.
 - **Pré-visualização:** `/admin/preview/pt` e `/admin/preview/en` mostram o rascunho com os
   mesmos componentes do site, antes de publicar.
+- **Foto:** enviada no perfil do painel (`POST /admin/photo`, com sessão e conferência de
+  origem). O servidor gira a imagem pela orientação da câmera, descarta os metadados (EXIF, GPS),
+  reduz para 480 e 960 px e grava em WebP em `/data/media`, com o resumo SHA-256 do conteúdo no
+  nome. Por isso o arquivo nunca muda: `/media/<id>-<largura>.webp` sai com cache de um ano, e
+  trocar de foto passa pelo rascunho e pela publicação, como o resto do conteúdo.
+- **Contato:** formulário com nome, e-mail e mensagem. A Server Action pública confere o limite
+  por IP (5 por hora), os campos, um campo-armadilha e o Turnstile, nessa ordem, e entrega a
+  mensagem em texto puro ao relay de e-mail, que manda para o dono do site. Fora de produção, ou
+  com `MAIL_RELAY_DRY_RUN=true`, o envio só vai para o log; em produção sem o relay, o
+  formulário some e fica o e-mail.
+- **Ícones:** `icon.svg`, `favicon.ico` e `apple-icon.png` em `src/app`, pela convenção de
+  arquivos do Next.
 
 ## Painel
 

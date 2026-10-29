@@ -13,7 +13,9 @@ import {
 } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { fillTemplate } from "@/i18n/template";
-import { getServerEnv } from "@/lib/env";
+import { getContactEnv, getServerEnv } from "@/lib/env";
+
+import { ContactForm } from "./contact-form";
 
 async function localeOf(
   params: PageProps<"/[locale]">["params"],
@@ -85,10 +87,20 @@ async function PublishedSite({ locale }: { locale: Locale }) {
     return <Placeholder locale={locale} />;
   }
   const { publicOrigin } = getServerEnv();
+  const contact = getContactEnv();
   return (
     <SitePage
       document={content.document}
       locale={locale}
+      contactForm={
+        contact.status === "ready" ? (
+          <ContactForm
+            locale={locale}
+            labels={getDictionary(locale).contactForm}
+            siteKey={contact.turnstile.siteKey}
+          />
+        ) : undefined
+      }
       ownHost={publicOrigin === null ? null : new URL(publicOrigin).hostname}
     />
   );

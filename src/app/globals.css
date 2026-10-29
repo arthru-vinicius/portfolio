@@ -27,6 +27,7 @@
   --color-accent: var(--site-accent);
   --color-accent-2: var(--site-accent-2);
   --color-on-accent: var(--site-on-accent);
+  --color-alert: var(--site-alert);
   --font-site: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-site-mono: var(--font-jetbrains), ui-monospace, Consolas, monospace;
 }

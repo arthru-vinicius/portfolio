@@ -7,8 +7,10 @@ import { toPublicDocument } from "@/content/public-projection";
 import { adminMessages } from "@/i18n/admin";
 import { localeFromPath, localePaths } from "@/i18n/config";
 import { requireAdmin } from "@/lib/auth/require-admin";
-import { getServerEnv } from "@/lib/env";
+import { getDictionary } from "@/i18n/dictionaries";
+import { getContactEnv, getServerEnv } from "@/lib/env";
 
+import { ContactForm } from "../../../(site)/[locale]/contact-form";
 import { jakarta, jetbrains } from "../../../fonts";
 import { loadEditableDraft } from "../../(panel)/editable-draft";
 
@@ -37,6 +39,7 @@ export default async function PreviewPage({
   // `null` quando o rascunho é de uma versão mais nova do painel.
   const draft = loadEditableDraft();
   const { publicOrigin } = getServerEnv();
+  const contact = getContactEnv();
   const other = locale === "en" ? "pt-BR" : "en";
 
   return (
@@ -54,6 +57,15 @@ export default async function PreviewPage({
         <SitePage
           document={toPublicDocument(draft.document)}
           locale={locale}
+          contactForm={
+            contact.status === "ready" ? (
+              <ContactForm
+                locale={locale}
+                labels={getDictionary(locale).contactForm}
+                siteKey={contact.turnstile.siteKey}
+              />
+            ) : undefined
+          }
           ownHost={
             publicOrigin === null ? null : new URL(publicOrigin).hostname
           }

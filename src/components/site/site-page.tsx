@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { ExperienceList } from "@/components/sections/experience-section";
 import { ProjectGrid } from "@/components/sections/projects-section";
 import { Section, textLinkClass } from "@/components/sections/section";
@@ -115,15 +117,19 @@ function BlockContent({
  * @param props.document - O documento, sem os campos privados.
  * @param props.locale - O idioma da página.
  * @param props.ownHost - O host do próprio site, para esconder o link dele.
+ * @param props.contactForm - O formulário de contato, quando ele está ligado;
+ *   sem ele, a seção mostra só o e-mail e as redes.
  */
 export function SitePage({
   document,
   locale,
   ownHost,
+  contactForm,
 }: {
   document: PublicDocument;
   locale: Locale;
   ownHost: string | null;
+  contactForm?: ReactNode;
 }) {
   const context = createSiteContext(locale);
   const { dictionary: dict } = context;
@@ -187,6 +193,7 @@ export function SitePage({
           name={profile.displayName}
           headline={context.text(profile.headline)}
           location={context.text(profile.location)}
+          photo={profile.photo}
           links={links}
           projectsHref={projects === undefined ? null : `#${projects.anchor}`}
           contactHref={`#${contactAnchor}`}
@@ -204,44 +211,54 @@ export function SitePage({
           </Section>
         ))}
         <Section id={contactAnchor} title={dict.sections.contact}>
-          <div className="flex max-w-3xl flex-col gap-6">
-            <p className="text-lg text-ink-muted">{dict.site.contactText}</p>
-            {profile.publicEmail !== undefined && (
-              <p className="flex flex-col gap-1">
-                <span className="font-site-mono text-xs tracking-[0.12em] text-accent uppercase">
-                  {dict.site.emailLabel}
-                </span>
-                <a
-                  href={`mailto:${profile.publicEmail}`}
-                  className="inline-flex items-center gap-2 text-xl font-bold break-all hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-2xl"
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-14">
+            <div className="flex min-w-0 flex-col gap-6">
+              <p className="text-lg text-ink-muted">{dict.site.contactText}</p>
+              {profile.publicEmail !== undefined && (
+                <p className="flex flex-col gap-1">
+                  <span className="font-site-mono text-xs tracking-[0.12em] text-accent uppercase">
+                    {dict.site.emailLabel}
+                  </span>
+                  <a
+                    href={`mailto:${profile.publicEmail}`}
+                    className="inline-flex items-center gap-2 text-xl font-bold break-all hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:text-2xl"
+                  >
+                    <MailIcon className="shrink-0 text-accent" />
+                    {profile.publicEmail}
+                  </a>
+                </p>
+              )}
+              {links.length > 0 && (
+                <ul
+                  aria-label={dict.site.linksLabel}
+                  className="flex flex-wrap gap-x-6 gap-y-2"
                 >
-                  <MailIcon className="shrink-0 text-accent" />
-                  {profile.publicEmail}
-                </a>
-              </p>
-            )}
-            {links.length > 0 && (
-              <ul
-                aria-label={dict.site.linksLabel}
-                className="flex flex-wrap gap-x-6 gap-y-2"
-              >
-                {links.map((link) => (
-                  <li key={link.id}>
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={textLinkClass}
-                    >
-                      {link.name}
-                      <span className="sr-only">
-                        {" "}
-                        {dict.site.opensInNewTab}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
+                  {links.map((link) => (
+                    <li key={link.id}>
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={textLinkClass}
+                      >
+                        {link.name}
+                        <span className="sr-only">
+                          {" "}
+                          {dict.site.opensInNewTab}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {contactForm !== undefined && (
+              <div className="site-card min-w-0 rounded-[1.25rem] border border-line bg-card p-6 sm:p-8">
+                <h3 className="mb-6 text-xl font-bold">
+                  {dict.contactForm.title}
+                </h3>
+                {contactForm}
+              </div>
             )}
           </div>
         </Section>
