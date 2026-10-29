@@ -1,4 +1,5 @@
-import type { SocialLink } from "@/content/schema";
+import type { ProfilePhoto, SocialLink } from "@/content/schema";
+import { fillTemplate } from "@/i18n/template";
 
 import { HeroParticles } from "./hero-particles";
 import { ArrowUpRightIcon, PinIcon } from "./icons";
@@ -14,6 +15,8 @@ export type ProfileLink = SocialLink & { name: string };
  * @param props.name - Nome de exibição.
  * @param props.headline - Título profissional, no idioma da página.
  * @param props.location - Local, no idioma da página.
+ * @param props.photo - Foto do perfil, se houver; sem ela, o texto ocupa a
+ *   largura toda.
  * @param props.links - Links do perfil que o site mostra.
  * @param props.projectsHref - Âncora dos projetos, se a seção existir.
  * @param props.contactHref - Âncora do contato.
@@ -23,6 +26,7 @@ export function Hero({
   name,
   headline,
   location,
+  photo,
   links,
   projectsHref,
   contactHref,
@@ -31,6 +35,7 @@ export function Hero({
   name: string;
   headline: string;
   location: string;
+  photo: ProfilePhoto | undefined;
   links: readonly ProfileLink[];
   projectsHref: string | null;
   contactHref: string;
@@ -48,61 +53,81 @@ export function Hero({
         aria-hidden="true"
         className="site-hero-glow pointer-events-none absolute inset-0"
       />
-      <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:py-36">
-        {location !== "" && (
-          <p className="inline-flex items-center gap-2 rounded-full border border-line bg-card/70 px-4 py-1.5 font-site-mono text-xs tracking-[0.12em] text-ink-muted uppercase">
-            <PinIcon className="text-sm text-accent" />
-            {location}
-          </p>
+      <div
+        className={`relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:py-36 ${photo === undefined ? "" : "items-center lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]"}`}
+      >
+        {photo !== undefined && (
+          <div className="site-photo relative w-full max-w-[15rem] sm:max-w-[18rem] lg:order-last lg:max-w-none">
+            {/* Os tamanhos já saem prontos do envio (WebP, 480 e 960 px). */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/media/${photo.id}-960.webp`}
+              srcSet={`/media/${photo.id}-480.webp 480w, /media/${photo.id}-960.webp 960w`}
+              sizes="(min-width: 1024px) 22rem, 18rem"
+              width={photo.width}
+              height={photo.height}
+              alt={fillTemplate(dict.site.photoAlt, { name })}
+              fetchPriority="high"
+              className="relative aspect-square w-full rounded-[1.75rem] border border-line object-cover"
+            />
+          </div>
         )}
-        <h1
-          id="topo-titulo"
-          className="mt-7 text-[clamp(2.25rem,10.5vw,3rem)] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance hyphens-auto sm:text-7xl lg:text-[5.25rem]"
-        >
-          {name}
-          {headline !== "" && (
-            <>
-              <br />
-              <span className="site-gradient [box-decoration-break:clone]">
-                {headline}
-              </span>
-            </>
+        <div className="min-w-0">
+          {location !== "" && (
+            <p className="inline-flex items-center gap-2 rounded-full border border-line bg-card/70 px-4 py-1.5 font-site-mono text-xs tracking-[0.12em] text-ink-muted uppercase">
+              <PinIcon className="text-sm text-accent" />
+              {location}
+            </p>
           )}
-        </h1>
-        <div className="mt-10 flex flex-wrap gap-3">
-          {projectsHref !== null && (
-            <a
-              href={projectsHref}
-              className="inline-flex min-h-12 items-center rounded-full bg-accent px-6 font-bold text-on-accent shadow-[0_0_28px_-6px_var(--site-accent)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            >
-              {dict.site.seeProjects}
-            </a>
-          )}
-          <a
-            href={contactHref}
-            className="inline-flex min-h-12 items-center rounded-full border border-line bg-card/70 px-6 font-bold hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          <h1
+            id="topo-titulo"
+            className="mt-7 text-[clamp(2.25rem,10.5vw,3rem)] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance hyphens-auto sm:text-7xl lg:text-[5.25rem]"
           >
-            {dict.site.contactCta}
-          </a>
+            {name}
+            {headline !== "" && (
+              <>
+                <br />
+                <span className="site-gradient [box-decoration-break:clone]">
+                  {headline}
+                </span>
+              </>
+            )}
+          </h1>
+          <div className="mt-10 flex flex-wrap gap-3">
+            {projectsHref !== null && (
+              <a
+                href={projectsHref}
+                className="inline-flex min-h-12 items-center rounded-full bg-accent px-6 font-bold text-on-accent shadow-[0_0_28px_-6px_var(--site-accent)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                {dict.site.seeProjects}
+              </a>
+            )}
+            <a
+              href={contactHref}
+              className="inline-flex min-h-12 items-center rounded-full border border-line bg-card/70 px-6 font-bold hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              {dict.site.contactCta}
+            </a>
+          </div>
+          {links.length > 0 && (
+            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-1">
+              {links.map((link) => (
+                <li key={link.id}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-ink-muted hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    {link.name}
+                    <span className="sr-only"> {dict.site.opensInNewTab}</span>
+                    <ArrowUpRightIcon />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        {links.length > 0 && (
-          <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-1">
-            {links.map((link) => (
-              <li key={link.id}>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-ink-muted hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  {link.name}
-                  <span className="sr-only"> {dict.site.opensInNewTab}</span>
-                  <ArrowUpRightIcon />
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </section>
   );

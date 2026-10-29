@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { TURNSTILE_SITE_KEY, TURNSTILE_TEST_SITE_KEY } from "@/lib/turnstile";
 
-import { getAdminEnv, getServerEnv, type AdminEnv } from "./env";
+import { getAdminEnv, getContactEnv, getServerEnv, type AdminEnv } from "./env";
 
 describe("getServerEnv", () => {
   it("usa o banco e a origem locais fora de produção", () => {
@@ -233,5 +233,74 @@ describe("getAdminEnv", () => {
       status: "disabled",
       problems: ["variáveis do servidor inválidas"],
     });
+  });
+});
+
+describe("getContactEnv", () => {
+  const relay = {
+    MAIL_RELAY_URL: "https://relay.example.com/send",
+    MAIL_RELAY_TOKEN: " token%com!símbolos ",
+  };
+
+  it("em produção, entrega pelo relay, com o token exatamente como veio", () => {
+    expect(
+      getContactEnv({
+        ...PRODUCTION,
+        TURNSTILE_SECRET_KEY: "secret-ficticia",
+        ...relay,
+      }),
+    ).toEqual({
+      status: "ready",
+      turnstile: { siteKey: TURNSTILE_SITE_KEY, secretKey: "secret-ficticia" },
+      hostnames: ["portfolio.example.com"],
+      delivery: {
+        mode: "relay",
+        url: "https://relay.example.com/send",
+        token: " token%com!símbolos ",
+      },
+    });
+  });
+
+  it("em produção sem o relay, desliga o formulário em vez de fingir que envia", () => {
+    expect(
+      getContactEnv({ ...PRODUCTION, TURNSTILE_SECRET_KEY: "secret-ficticia" }),
+    ).toEqual({
+      status: "disabled",
+      problems: ["MAIL_RELAY_URL ou MAIL_RELAY_TOKEN ausente"],
+    });
+  });
+
+  it("só registra no log fora de produção, ou com MAIL_RELAY_DRY_RUN=true", () => {
+    const development = getContactEnv({ TURNSTILE_SECRET_KEY: "1x0AA" });
+    const dryRun = getContactEnv({
+      ...PRODUCTION,
+      TURNSTILE_SECRET_KEY: "secret-ficticia",
+      MAIL_RELAY_DRY_RUN: "true",
+    });
+
+    expect(development).toMatchObject({
+      status: "ready",
+      delivery: { mode: "log" },
+      turnstile: { siteKey: TURNSTILE_TEST_SITE_KEY },
+    });
+    expect(dryRun).toMatchObject({
+      status: "ready",
+      delivery: { mode: "log" },
+    });
+  });
+
+  it("desliga o formulário sem a secret do Turnstile ou com a URL do relay errada", () => {
+    expect(getContactEnv({ ...PRODUCTION, ...relay })).toMatchObject({
+      status: "disabled",
+      problems: ["TURNSTILE_SECRET_KEY ausente"],
+    });
+    expect(
+      getContactEnv({
+        ...PRODUCTION,
+        TURNSTILE_SECRET_KEY: "secret-ficticia",
+        ...relay,
+        MAIL_RELAY_URL: "relay sem esquema",
+      }),
+    ).toMatchObject({ status: "disabled" });
   });
 });

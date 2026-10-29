@@ -45,6 +45,10 @@ const ROUTE_HANDLERS: Record<
     load: () => import("./export/route"),
     methods: ["GET"],
   },
+  "src/app/admin/photo/route.ts": {
+    load: () => import("./photo/route"),
+    methods: ["POST"],
+  },
 };
 
 const HTTP_METHODS =

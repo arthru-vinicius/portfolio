@@ -299,3 +299,138 @@ export function getAdminEnv(
   }
   return adminEnv;
 }
+
+/** Como o formulário de contato entrega a mensagem. */
+export type ContactDelivery =
+  | { mode: "relay"; url: string; token: string }
+  /** Só registra no log: desenvolvimento, testes e e2e. */
+  | { mode: "log" };
+
+/** Configuração do formulário de contato. */
+export type ContactEnv =
+  | {
+      status: "ready";
+      turnstile: { siteKey: string; secretKey: string };
+      /** Hosts em que o widget pode ter sido exibido: o do `PUBLIC_ORIGIN`. */
+      hostnames: readonly string[];
+      delivery: ContactDelivery;
+    }
+  | { status: "disabled"; problems: readonly string[] };
+
+const contactEnvSchema = z.object({
+  TURNSTILE_SITE_KEY: optionalText,
+  TURNSTILE_SECRET_KEY: optionalSecret,
+  MAIL_RELAY_URL: optionalText,
+  MAIL_RELAY_TOKEN: optionalSecret,
+  MAIL_RELAY_DRY_RUN: optionalText,
+});
+
+function readContactEnv(
+  source: Record<string, string | undefined>,
+): ContactEnv {
+  let serverEnv: ServerEnv;
+  try {
+    serverEnv = getServerEnv(source);
+  } catch {
+    return {
+      status: "disabled",
+      problems: ["variáveis do servidor inválidas"],
+    };
+  }
+  const parsed = contactEnvSchema.safeParse(source);
+  if (!parsed.success) {
+    return { status: "disabled", problems: ["variáveis do contato inválidas"] };
+  }
+  const {
+    TURNSTILE_SITE_KEY: siteKeyOverride,
+    TURNSTILE_SECRET_KEY: secretKey,
+    MAIL_RELAY_URL: relayUrl,
+    MAIL_RELAY_TOKEN: relayToken,
+    MAIL_RELAY_DRY_RUN: dryRun,
+  } = parsed.data;
+  const { nodeEnv, publicOrigin } = serverEnv;
+
+  const problems: string[] = [];
+  if (secretKey === undefined) {
+    problems.push("TURNSTILE_SECRET_KEY ausente");
+  }
+  if (publicOrigin === null) {
+    problems.push("PUBLIC_ORIGIN ausente ou fora do formato https://host");
+  }
+
+  let delivery: ContactDelivery | null = null;
+  if (relayUrl !== undefined && relayToken !== undefined) {
+    let url: URL | null = null;
+    try {
+      url = new URL(relayUrl);
+    } catch {
+      url = null;
+    }
+    if (url === null || !/^https?:$/.test(url.protocol)) {
+      problems.push("MAIL_RELAY_URL fora do formato https://…");
+    } else {
+      // O token vai exatamente como veio: sem aparar e sem validar o formato.
+      delivery = { mode: "relay", url: url.href, token: relayToken };
+    }
+  } else if (dryRun === "true" || nodeEnv !== "production") {
+    delivery = { mode: "log" };
+  } else {
+    problems.push("MAIL_RELAY_URL ou MAIL_RELAY_TOKEN ausente");
+  }
+
+  if (
+    problems.length > 0 ||
+    secretKey === undefined ||
+    publicOrigin === null ||
+    delivery === null
+  ) {
+    return { status: "disabled", problems };
+  }
+  return {
+    status: "ready",
+    turnstile: {
+      siteKey:
+        siteKeyOverride ??
+        (nodeEnv === "production"
+          ? TURNSTILE_SITE_KEY
+          : TURNSTILE_TEST_SITE_KEY),
+      secretKey,
+    },
+    hostnames: [new URL(publicOrigin).hostname],
+    delivery,
+  };
+}
+
+let cachedContactEnv: ContactEnv | undefined;
+
+/**
+ * Lê a configuração do formulário de contato. Nunca lança: faltando a secret
+ * do Turnstile ou, em produção, o relay, o formulário fica desligado (falha
+ * fechada) e o site mostra só o e-mail.
+ *
+ * Fora de produção, ou com `MAIL_RELAY_DRY_RUN=true`, a mensagem só vai para
+ * o log: o relay aceita só o IP do servidor.
+ *
+ * @param source - Variáveis a ler. Os testes passam um objeto próprio; fora
+ *   deles, o padrão é `process.env`.
+ * @returns A situação do formulário. Sem `source`, o resultado fica guardado,
+ *   e os problemas vão para o log uma vez.
+ */
+export function getContactEnv(
+  source: Record<string, string | undefined> = process.env,
+): ContactEnv {
+  const useCache = source === process.env;
+  if (useCache && cachedContactEnv) {
+    return cachedContactEnv;
+  }
+  const contactEnv = readContactEnv(source);
+  if (useCache) {
+    cachedContactEnv = contactEnv;
+    if (contactEnv.status === "disabled") {
+      console.warn(
+        `[contato] formulário desligado: ${contactEnv.problems.join("; ")}`,
+      );
+    }
+  }
+  return contactEnv;
+}

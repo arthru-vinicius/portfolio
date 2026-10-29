@@ -313,6 +313,20 @@ export const adminMessages = {
     intro:
       "Quem você é e como entrar em contato. O nome de exibição e o título abrem o site.",
     identity: "Identidade",
+    photo: "Foto",
+    photoHint:
+      "JPEG, PNG ou WebP, até 15 MB. O servidor apaga os dados da câmera (como o local), reduz o tamanho e guarda em WebP.",
+    photoPreview: "Prévia da foto do perfil",
+    photoNone: "Sem foto: o topo do site ocupa a largura toda com o texto.",
+    photoChoose: "Escolher foto",
+    photoUploading: "Enviando a foto…",
+    photoUploaded:
+      "Foto enviada. Salve o perfil para ela entrar no rascunho e publique para ir ao site.",
+    photoRemove: "Remover foto",
+    photoTooLarge: "A foto passa de 15 MB. Escolha um arquivo menor.",
+    photoInvalid: "O arquivo não é uma imagem que o servidor consiga ler.",
+    photoUnavailable:
+      "Não foi possível enviar a foto agora. Confira a conexão e tente de novo.",
     contact: "Contato",
     private: "Só no painel",
   },

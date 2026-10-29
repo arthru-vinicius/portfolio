@@ -10,7 +10,7 @@ type TurnstileApi = {
     options: {
       sitekey: string;
       action: string;
-      theme: "auto";
+      theme: "auto" | "light" | "dark";
       language: string;
       size: "flexible";
       callback: (token: string) => void;
@@ -38,6 +38,8 @@ export type TurnstileWidgetProps = {
   action: string;
   /** Nome do campo escondido que leva o token no formulário. */
   name?: string;
+  /** Idioma do widget, no formato da Cloudflare (`pt-br`, `en`). */
+  language?: string;
 };
 
 /**
@@ -51,6 +53,7 @@ export function TurnstileWidget({
   siteKey,
   action,
   name = "turnstileToken",
+  language = "pt-br",
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
@@ -62,11 +65,13 @@ export function TurnstileWidget({
     if (!scriptReady || container === null || turnstile === undefined) {
       return;
     }
+    // O tema escolhido no botão do site (`data-theme`) vale sobre o do sistema.
+    const chosen = document.documentElement.getAttribute("data-theme");
     const widgetId = turnstile.render(container, {
       sitekey: siteKey,
       action,
-      theme: "auto",
-      language: "pt-br",
+      theme: chosen === "light" || chosen === "dark" ? chosen : "auto",
+      language,
       size: "flexible",
       callback: setToken,
       "expired-callback": () => setToken(""),
@@ -77,7 +82,7 @@ export function TurnstileWidget({
         turnstile.remove(widgetId);
       }
     };
-  }, [scriptReady, siteKey, action]);
+  }, [scriptReady, siteKey, action, language]);
 
   return (
     <>

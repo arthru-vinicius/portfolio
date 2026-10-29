@@ -117,6 +117,19 @@ export const socialLinkSchema = z
     path: ["label"],
   });
 
+/**
+ * Foto do perfil, enviada pelo painel. O `id` é o resumo SHA-256 do arquivo
+ * maior: a mesma foto tem sempre o mesmo id, e uma foto nova, outro. Assim os
+ * arquivos nunca mudam, e uma revisão antiga continua apontando para a foto
+ * dela.
+ */
+export const profilePhotoSchema = z.object({
+  id: z.string().regex(/^[0-9a-f]{64}$/, "foto inválida"),
+  /** Medidas do arquivo maior, em px, para a página reservar o espaço. */
+  width: z.number().int().positive().max(4000),
+  height: z.number().int().positive().max(4000),
+});
+
 /** Perfil: quem é a pessoa e como encontrá-la. */
 export const profileSchema = z.object({
   /** Nome completo, usado no currículo. */
@@ -125,6 +138,8 @@ export const profileSchema = z.object({
   displayName: text(contentLimits.line),
   headline: localizedLineSchema,
   location: localizedLineSchema,
+  /** Opcional: sem foto, o topo do site ocupa a largura toda com o texto. */
+  photo: profilePhotoSchema.optional(),
   links: listOf(socialLinkSchema, contentLimits.links),
   /** E-mail do currículo. */
   publicEmail: z
@@ -370,6 +385,8 @@ export type LocalizedText = z.infer<typeof localizedLineSchema>;
 export type SocialLink = z.infer<typeof socialLinkSchema>;
 /** Perfil, com os campos privados. */
 export type Profile = z.infer<typeof profileSchema>;
+/** Foto do perfil. */
+export type ProfilePhoto = z.infer<typeof profilePhotoSchema>;
 /** Experiência profissional. */
 export type ExperienceItem = z.infer<typeof experienceItemSchema>;
 /** Projeto. */
