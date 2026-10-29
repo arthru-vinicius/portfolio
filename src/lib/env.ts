@@ -54,6 +54,7 @@ const serverEnvSchema = z
     DEPLOY_STATUS_FILE: optionalText,
     PUBLIC_ORIGIN: optionalText,
     ALLOW_INDEXING: optionalText,
+    WEB_ANALYTICS_TOKEN: optionalText,
   })
   .transform((env) => ({
     nodeEnv: env.NODE_ENV,
@@ -78,6 +79,16 @@ const serverEnvSchema = z
         : parseOrigin(env.PUBLIC_ORIGIN),
     /** Só o valor exato `true` libera a indexação; o padrão é não indexar. */
     allowIndexing: env.ALLOW_INDEXING === "true",
+    /**
+     * Token do Cloudflare Web Analytics, que vai no HTML das páginas
+     * públicas. Sem ele, ou fora do formato (letras e números), o site não
+     * carrega o script.
+     */
+    webAnalyticsToken:
+      env.WEB_ANALYTICS_TOKEN !== undefined &&
+      /^[A-Za-z0-9]{16,64}$/.test(env.WEB_ANALYTICS_TOKEN)
+        ? env.WEB_ANALYTICS_TOKEN
+        : null,
   }));
 
 /**

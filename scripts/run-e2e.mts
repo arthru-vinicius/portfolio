@@ -47,6 +47,9 @@ const admin = {
   turnstileSecretKey: "1x0000000000000000000000000000000AA",
 };
 
+/** Token do Web Analytics, fictício; o teste do site confere o mesmo. */
+const webAnalyticsToken = "0123456789abcdef0123456789abcdef";
+
 /** Falha esperada do roteiro, com mensagem para quem roda. */
 class E2eSetupError extends Error {}
 
@@ -125,6 +128,10 @@ function startContainer(deployDir: string): void {
       // registra no log.
       "--env",
       "MAIL_RELAY_DRY_RUN=true",
+      // Token fictício: o site põe o script do Web Analytics, e o teste
+      // responde por ele, sem sair para a Cloudflare.
+      "--env",
+      `WEB_ANALYTICS_TOKEN=${webAnalyticsToken}`,
       "--env",
       "DEPLOY_STATUS_FILE=/deploy/last-deploy.json",
       "--publish",

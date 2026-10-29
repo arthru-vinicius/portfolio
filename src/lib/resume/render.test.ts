@@ -245,6 +245,23 @@ describe("DOCX do currículo", () => {
   });
 });
 
+describe("Markdown do currículo", () => {
+  it("põe o link do portfólio, menos quando o perfil já aponta para o site", async () => {
+    const markdown = async (origin: string) =>
+      (
+        await renderResumeFile(publicFixture(), file("curriculo.md"), {
+          origin,
+        })
+      ).toString("utf8");
+
+    expect(await markdown("https://portfolio.example.com")).toContain(
+      "Portfólio: [portfolio.example.com/pt](https://portfolio.example.com/pt/)",
+    );
+    // O link "Site" do perfil já é https://example.com.
+    expect(await markdown("https://example.com")).not.toContain("Portfólio:");
+  });
+});
+
 describe("renderPublicResumeFiles", () => {
   it("gera os oito arquivos", async () => {
     const files = await renderPublicResumeFiles(publicFixture());

@@ -9,7 +9,11 @@ import { renderResumeDocx } from "./docx";
 import { renderJsonResume } from "./json-resume";
 import { layoutResume } from "./layout";
 import { renderResumeMarkdown } from "./markdown";
-import { buildResumeModel, type ResumeOptions } from "./model";
+import {
+  buildResumeModel,
+  type ResumeModel,
+  type ResumeOptions,
+} from "./model";
 import { renderResumePdf } from "./pdf";
 import { displayUrl } from "./plain-text";
 
@@ -21,6 +25,18 @@ export type ResumeFileOptions = ResumeOptions & {
    */
   origin?: string | null;
 };
+
+/** Se algum link do perfil aponta para o host de um endereço. */
+function linksToHost(model: ResumeModel, url: string): boolean {
+  const { host } = new URL(url);
+  return model.links.some((link) => {
+    try {
+      return new URL(link.url).host === host;
+    } catch {
+      return false;
+    }
+  });
+}
 
 /**
  * Gera um arquivo do currículo.
@@ -48,8 +64,9 @@ export async function renderResumeFile(
     case "md":
       return Buffer.from(
         renderResumeMarkdown(layoutResume(model), {
+          // Se um link do perfil já é o próprio site, ele não entra duas vezes.
           portfolio:
-            portfolio === null
+            portfolio === null || linksToHost(model, portfolio)
               ? null
               : {
                   label: getDictionary(file.locale).resume.portfolio,

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { SitePage } from "@/components/site/site-page";
+import { WebAnalytics } from "@/components/site/web-analytics";
 import {
   readPublishedContent,
   type PublishedContent,
@@ -115,11 +116,12 @@ async function PublishedSite({ locale }: { locale: Locale }) {
   if (content === null) {
     return <Placeholder locale={locale} />;
   }
-  const { publicOrigin } = getServerEnv();
+  const { publicOrigin, webAnalyticsToken } = getServerEnv();
   const contact = getContactEnv();
   const resume = await publishedResume(content);
   return (
     <>
+      {webAnalyticsToken !== null && <WebAnalytics token={webAnalyticsToken} />}
       {publicOrigin !== null && (
         <script
           type="application/ld+json"

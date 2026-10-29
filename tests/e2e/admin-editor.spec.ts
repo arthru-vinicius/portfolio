@@ -457,6 +457,50 @@ test("só carrega o Turnstile quando o contato se aproxima", async ({
   expect(turnstile.length).toBeGreaterThan(0);
 });
 
+test("a CSP não bloqueia nada, e o Web Analytics só entra no site", async ({
+  page,
+}) => {
+  // O token fictício que o `run-e2e.mts` passa ao container.
+  const token = "0123456789abcdef0123456789abcdef";
+  // O script de verdade fica na Cloudflare; o teste responde por ele.
+  await page.route("https://static.cloudflareinsights.com/**", (route) =>
+    route.fulfill({ contentType: "text/javascript", body: "" }),
+  );
+  await page.addInitScript(() => {
+    const blocked: string[] = [];
+    Object.assign(window, { cspBlocked: blocked });
+    document.addEventListener("securitypolicyviolation", (event) => {
+      blocked.push(`${event.effectiveDirective} ${event.blockedURI}`);
+    });
+  });
+  const blocked = () =>
+    page.evaluate(() => (window as { cspBlocked?: string[] }).cspBlocked);
+  const beacon = page.locator(
+    'script[src="https://static.cloudflareinsights.com/beacon.min.js"]',
+  );
+
+  const response = await page.goto("/pt/");
+  expect(response?.headers()["content-security-policy"]).toContain(
+    "frame-ancestors 'none'",
+  );
+  await page.waitForLoadState("load");
+  await expect(beacon).toHaveAttribute(
+    "data-cf-beacon",
+    JSON.stringify({ token }),
+  );
+  // O Turnstile do contato carrega ao rolar; a CSP precisa deixar.
+  await page.locator("#contato").scrollIntoViewIfNeeded();
+  await expect(page.locator('input[name="turnstileToken"]')).not.toHaveValue(
+    "",
+  );
+  expect(await blocked()).toEqual([]);
+
+  await page.goto("/admin");
+  await waitForPage(page, home.heading);
+  await expect(beacon).toHaveCount(0);
+  expect(await blocked()).toEqual([]);
+});
+
 test("envia uma mensagem pelo formulário de contato", async ({ page }) => {
   const form = ptBR.contactForm;
   const token = page.locator('input[name="turnstileToken"]');
