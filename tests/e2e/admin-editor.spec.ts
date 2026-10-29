@@ -280,7 +280,7 @@ test("publica o rascunho depois de confirmar", async ({ page }) => {
 
 test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   const title = page.getByRole("heading", { level: 1 });
-  await page.goto("/pt");
+  await page.goto("/pt/");
   await expect(title).toContainText(`Ana Publicada ${test.info().retry}`);
   await expect(title).toContainText("Desenvolvedora Full Stack");
   const photo = page.getByRole("img", {
@@ -303,14 +303,60 @@ test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
   await page.getByRole("link", { name: ptBR.language.switchTo }).click();
-  await expect(page).toHaveURL(/\/en$/);
+  await expect(page).toHaveURL(/\/en\/$/);
   await expect(title).toContainText("Full Stack Developer");
+});
+
+test("o site oferece o currículo da publicação, em PDF e DOCX", async ({
+  page,
+}) => {
+  await page.goto("/pt/");
+  const hero = page.locator("#topo");
+  await hero.getByText(ptBR.resumeDownload.button).click();
+  const pdf = hero.getByRole("link", { name: /^PDF/ }).first();
+  await expect(pdf).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    pdf.click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(
+    /^ana-publicada-\d+-curriculo\.pdf$/,
+  );
+  await page.keyboard.press("Escape");
+  await expect(hero.locator("details")).not.toHaveAttribute("open");
+
+  // A URL é fixa; a ETag é da revisão, e a cópia de quem já baixou vale.
+  const file = await page.request.get("/cv/curriculo.pdf");
+  expect(file.status()).toBe(200);
+  expect(file.headers()["content-type"]).toBe("application/pdf");
+  expect(file.headers()["cache-control"]).toBe("public, no-cache");
+  expect((await file.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  const etag = file.headers().etag ?? "";
+  const revalidated = await page.request.get("/cv/curriculo.pdf", {
+    headers: { "If-None-Match": etag },
+  });
+  expect(revalidated.status()).toBe(304);
+
+  const word = await page.request.get("/cv/resume.docx");
+  expect(word.headers()["content-type"]).toBe(
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  );
+  expect((await word.body()).subarray(0, 2).toString()).toBe("PK");
+
+  // O painel gera a versão completa do rascunho, só para quem tem sessão.
+  const full = await page.request.get("/admin/cv/curriculo.pdf?full=1");
+  expect(full.status()).toBe(200);
+  expect(full.headers()["content-disposition"]).toMatch(
+    /-curriculo-completo\.pdf"$/,
+  );
 });
 
 test("envia uma mensagem pelo formulário de contato", async ({ page }) => {
   const form = ptBR.contactForm;
   const token = page.locator('input[name="turnstileToken"]');
-  await page.goto("/pt#contato");
+  await page.goto("/pt/#contato");
   await page.getByLabel(form.name, { exact: true }).fill("Visitante do e2e");
   await page.getByLabel(form.email, { exact: true }).fill("sem-arroba");
   await page
@@ -378,7 +424,7 @@ for (const colorScheme of ["light", "dark"] as const) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
-    for (const path of ["/pt", "/en", "/admin/preview/pt"]) {
+    for (const path of ["/pt/", "/en/", "/admin/preview/pt"]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       expect(

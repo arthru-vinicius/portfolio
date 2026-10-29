@@ -13,18 +13,42 @@ import { listItemsOf, isListBlock } from "@/content/editing";
 import type { PublicDocument } from "@/content/public-projection";
 import type { Block } from "@/content/schema";
 import { customTitle, siteBlocks, slugify } from "@/content/site-view";
-import type { Locale } from "@/i18n/config";
+import { locales, type Locale } from "@/i18n/config";
+import { getDictionary } from "@/i18n/dictionaries";
 import { pluralize } from "@/i18n/template";
+import { resumeContentTypes, type ResumeDownload } from "@/lib/resume/catalog";
 
 import { Hero, SkillsMarquee, type ProfileLink } from "./hero";
 import { MailIcon } from "./icons";
 import { Markdown } from "./markdown";
 import type { NavItem } from "./mobile-menu";
+import { ResumeMenu, type ResumeMenuGroup } from "./resume-menu";
 import { ScrollProgress } from "./scroll-progress";
 import { createSiteContext, type SiteContext } from "./site-context";
 import { SiteHeader } from "./site-header";
 
+/** O botão do currículo no topo, igual ao "Fale comigo". */
+const heroButtonClass =
+  "inline-flex min-h-12 items-center gap-2 rounded-full border border-line bg-card/70 px-6 font-bold group-open:border-accent hover:border-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
+/** O botão do currículo no rodapé, discreto como os links dele. */
+const footerButtonClass =
+  "inline-flex min-h-11 items-center gap-2 font-semibold text-ink-muted group-open:text-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+
 type PlannedSection = { block: Block; anchor: string; title: string };
+
+/**
+ * As seções que entram no menu do cabeçalho: as principais. Habilidades e
+ * idiomas são curtas, e os blocos livres são complementos; as três continuam
+ * na página. O contato fica com o botão "Fale comigo".
+ */
+const NAV_BLOCK_TYPES: ReadonlySet<Block["type"]> = new Set([
+  "about",
+  "experience",
+  "projects",
+  "education",
+  "awards",
+]);
 
 /** Dá a cada bloco a âncora e o título que ele tem nesta página. */
 function planSections(
@@ -65,6 +89,45 @@ function eyebrowOf(block: Block, context: SiteContext): string | undefined {
     count,
     context.locale,
   );
+}
+
+/** Os arquivos do currículo por idioma: o da página primeiro, cada um com os textos dele. */
+function resumeMenuGroups(
+  downloads: readonly ResumeDownload[],
+  pageLocale: Locale,
+): ResumeMenuGroup[] {
+  const order = [
+    pageLocale,
+    ...locales.filter((locale) => locale !== pageLocale),
+  ];
+  return order.flatMap((locale) => {
+    const files = downloads.filter((file) => file.locale === locale);
+    if (files.length === 0) {
+      return [];
+    }
+    const dict = getDictionary(locale).resumeDownload;
+    const kilobytes = new Intl.NumberFormat(locale, {
+      style: "unit",
+      unit: "kilobyte",
+      maximumFractionDigits: 0,
+    });
+    return [
+      {
+        lang: locale,
+        label: dict.language,
+        files: files.map((file) => ({
+          href: file.href,
+          fileName: file.fileName,
+          type: resumeContentTypes[file.format],
+          label: dict[file.format],
+          size:
+            file.size === null
+              ? null
+              : kilobytes.format(Math.max(1, Math.round(file.size / 1000))),
+        })),
+      },
+    ];
+  });
 }
 
 function BlockContent({
@@ -119,17 +182,21 @@ function BlockContent({
  * @param props.ownHost - O host do próprio site, para esconder o link dele.
  * @param props.contactForm - O formulário de contato, quando ele está ligado;
  *   sem ele, a seção mostra só o e-mail e as redes.
+ * @param props.resume - Os arquivos do currículo, para o botão "Baixar
+ *   currículo" do topo e do rodapé; sem eles, o botão não aparece.
  */
 export function SitePage({
   document,
   locale,
   ownHost,
   contactForm,
+  resume,
 }: {
   document: PublicDocument;
   locale: Locale;
   ownHost: string | null;
   contactForm?: ReactNode;
+  resume?: readonly ResumeDownload[];
 }) {
   const context = createSiteContext(locale);
   const { dictionary: dict } = context;
@@ -164,14 +231,12 @@ export function SitePage({
           ? (link.label ?? link.url)
           : dict.links[link.kind],
     }));
-  const navItems: NavItem[] = [
-    ...sections.map(({ anchor, title }) => ({
-      href: `#${anchor}`,
-      label: title,
-    })),
-    { href: `#${contactAnchor}`, label: dict.sections.contact },
-  ];
+  const navItems: NavItem[] = sections
+    .filter(({ block }) => NAV_BLOCK_TYPES.has(block.type))
+    .map(({ anchor, title }) => ({ href: `#${anchor}`, label: title }));
   const brand = profile.displayName.split(/\s+/)[0] ?? profile.displayName;
+  const resumeGroups =
+    resume === undefined ? [] : resumeMenuGroups(resume, locale);
 
   return (
     <>
@@ -197,6 +262,16 @@ export function SitePage({
           links={links}
           projectsHref={projects === undefined ? null : `#${projects.anchor}`}
           contactHref={`#${contactAnchor}`}
+          resumeMenu={
+            resumeGroups.length > 0 ? (
+              <ResumeMenu
+                label={dict.resumeDownload.button}
+                groups={resumeGroups}
+                placement="down"
+                buttonClassName={heroButtonClass}
+              />
+            ) : undefined
+          }
           context={context}
         />
         <SkillsMarquee skills={skills} />
@@ -269,6 +344,14 @@ export function SitePage({
             © {new Date().getFullYear()} {profile.displayName}
           </p>
           <p>{dict.site.footerNote}</p>
+          {resumeGroups.length > 0 && (
+            <ResumeMenu
+              label={dict.resumeDownload.button}
+              groups={resumeGroups}
+              placement="up"
+              buttonClassName={footerButtonClass}
+            />
+          )}
           <a href="#topo" className={textLinkClass}>
             {dict.site.backToTop}
           </a>

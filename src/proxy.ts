@@ -6,7 +6,7 @@ import {
   adminUrl,
 } from "@/lib/auth/request";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth/session";
-import { localePaths, negotiateLocale } from "@/i18n/config";
+import { localeFromPath, localeHomePath, negotiateLocale } from "@/i18n/config";
 import { getAdminEnv, getServerEnv } from "@/lib/env";
 import { isAllowedHost } from "@/lib/hosts";
 import { isIndexable } from "@/lib/indexing";
@@ -105,21 +105,34 @@ export function proxy(request: NextRequest): NextResponse {
   }
 
   const host = request.headers.get("host");
+  // Redirecionamentos ficam no host do pedido, com o protocolo do site.
+  const base =
+    host !== null && publicOrigin !== null
+      ? `${new URL(publicOrigin).protocol}//${host}`
+      : request.nextUrl.origin;
   let response: NextResponse;
   if (pathname === "/") {
     // A raiz não tem conteúdo próprio: leva ao idioma do navegador. O
     // redirecionamento é temporário e varia com o Accept-Language, para
     // nenhum cache guardar a escolha de um visitante para outro.
     const locale = negotiateLocale(request.headers.get("accept-language"));
-    const base =
-      host !== null && publicOrigin !== null
-        ? `${new URL(publicOrigin).protocol}//${host}`
-        : request.nextUrl.origin;
     response = NextResponse.redirect(
-      new URL(`/${localePaths[locale]}${search}`, base),
+      new URL(`${localeHomePath(locale)}${search}`, base),
       307,
     );
     response.headers.set("Vary", "Accept-Language");
+  } else if (
+    localeFromPath(pathname.slice(1)) !== null &&
+    (request.method === "GET" || request.method === "HEAD")
+  ) {
+    // A página de um idioma mora com a barra no fim, para o link de uma
+    // seção ficar `/pt/#experiencia`. O Next não acrescenta a barra sozinho
+    // (`skipTrailingSlashRedirect`), porque o `/api/health` não pode ser
+    // redirecionado.
+    response = NextResponse.redirect(
+      new URL(`${pathname}/${search}`, base),
+      308,
+    );
   } else if (isAdminPath(pathname)) {
     response = adminResponse(request, host);
     for (const [name, value] of Object.entries(ADMIN_HEADERS)) {

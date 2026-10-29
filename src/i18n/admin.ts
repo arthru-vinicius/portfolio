@@ -79,6 +79,8 @@ export const adminMessages = {
       "O rascunho mudou em outra aba ou janela. Recarregue a página para publicar a versão mais recente.",
     newerVersion:
       "O rascunho foi salvo por uma versão mais recente do painel e não pode ser publicado por esta.",
+    resumeFailed:
+      "Não foi possível gerar o currículo, e nada foi publicado. Tente de novo; se continuar, confira os logs do servidor.",
     unexpected:
       "Não foi possível publicar agora. Confira a conexão e tente de novo.",
   },
@@ -200,7 +202,7 @@ export const adminMessages = {
     collapse: (name: string) => `Fechar ${name}`,
     visible: "Visível no site",
     inResume: "No currículo",
-    inResumeHint: "Entra no currículo em PDF e XLSX.",
+    inResumeHint: "Entra no currículo em PDF e DOCX.",
     hidden: "Oculto no site",
     missingTranslation: "Tradução faltando",
     portuguese: "Português",
@@ -361,6 +363,20 @@ export const adminMessages = {
     title: "Currículo",
     heading: "Currículo",
     intro:
-      "O currículo em PDF e XLSX sai do mesmo conteúdo do site. O que entra nele é marcado em cada item, em “No currículo”.",
+      "O currículo em PDF e DOCX sai do mesmo conteúdo do site. O que entra nele é marcado em cada item, em “No currículo”.",
+    downloadsHeading: "Baixar o rascunho",
+    downloadsIntro:
+      "Gerados agora, a partir do rascunho salvo, para conferir antes de publicar. O site passa a oferecer os arquivos novos quando você publica.",
+    portuguese: "Português",
+    english: "Inglês",
+    publicVersion: "Sem telefone, como no site",
+    fullVersion: "Completo, com telefone",
+    fullVersionHint:
+      "A versão completa é gerada só para você baixar e nunca vai para o site.",
+    noPhone:
+      "Para gerar a versão completa, com telefone, preencha o telefone no Perfil.",
+    /** Acrescentado ao nome do arquivo, como `ana-curriculo-rascunho.pdf`. */
+    draftSuffix: "rascunho",
+    fullSuffix: "completo",
   },
 } as const;

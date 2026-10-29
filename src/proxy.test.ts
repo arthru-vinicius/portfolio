@@ -64,12 +64,12 @@ describe("proxy", () => {
 
   describe("indexação", () => {
     it("deixa o host canônico indexável quando a indexação está liberada", () => {
-      expect(proxy(request("/pt")).headers.get("x-robots-tag")).toBeNull();
+      expect(proxy(request("/pt/")).headers.get("x-robots-tag")).toBeNull();
     });
 
     it("pede para não indexar os outros hosts", () => {
       expect(
-        proxy(request("/pt", { host: "example.com" })).headers.get(
+        proxy(request("/pt/", { host: "example.com" })).headers.get(
           "x-robots-tag",
         ),
       ).toBe("noindex");
@@ -78,11 +78,13 @@ describe("proxy", () => {
     it("pede para não indexar nem o canônico com a indexação desligada", () => {
       env.server.allowIndexing = false;
 
-      expect(proxy(request("/pt")).headers.get("x-robots-tag")).toBe("noindex");
+      expect(proxy(request("/pt/")).headers.get("x-robots-tag")).toBe(
+        "noindex",
+      );
     });
 
     it("só acrescenta cabeçalhos nas páginas do site, sem redirecionar", () => {
-      const response = proxy(request("/pt", { host: "example.com" }));
+      const response = proxy(request("/pt/", { host: "example.com" }));
 
       expect(response.headers.get("x-middleware-next")).toBe("1");
       expect(response.headers.get("location")).toBeNull();
@@ -100,7 +102,7 @@ describe("proxy", () => {
 
       expect(english.status).toBe(307);
       expect(english.headers.get("location")).toBe(
-        "https://portfolio.example.com/en?utm=1",
+        "https://portfolio.example.com/en/?utm=1",
       );
       expect(english.headers.get("vary")).toBe("Accept-Language");
     });
@@ -117,14 +119,34 @@ describe("proxy", () => {
         );
 
         expect(response.headers.get("location")).toBe(
-          "https://portfolio.example.com/pt",
+          "https://portfolio.example.com/pt/",
         );
       }
     });
 
-    it("não redireciona os caminhos que já têm idioma", () => {
-      for (const path of ["/pt", "/en"]) {
+    it("não redireciona a página de um idioma, que já tem a barra", () => {
+      for (const path of ["/pt/", "/en/"]) {
         expect(proxy(request(path)).headers.get("location")).toBeNull();
+      }
+    });
+  });
+
+  describe("barra no fim", () => {
+    it("acrescenta a barra na página de um idioma, mantendo a busca", () => {
+      const response = proxy(request("/en?utm=1", { protocol: "https" }));
+
+      expect(response.status).toBe(308);
+      expect(response.headers.get("location")).toBe(
+        "https://portfolio.example.com/en/?utm=1",
+      );
+    });
+
+    it("não mexe em envio de formulário nem em outros caminhos", () => {
+      expect(
+        proxy(request("/pt", { method: "POST" })).headers.get("location"),
+      ).toBeNull();
+      for (const path of ["/ptx", "/cv/curriculo.pdf", "/admin/login"]) {
+        expect(proxy(request(path)).status).not.toBe(308);
       }
     });
   });
@@ -140,7 +162,7 @@ describe("proxy", () => {
     });
 
     it("manda HSTS, sem includeSubDomains, nas respostas em HTTPS", () => {
-      for (const path of ["/", "/pt", "/admin/login"]) {
+      for (const path of ["/", "/pt/", "/admin/login"]) {
         expect(
           proxy(request(path, { protocol: "https" })).headers.get(
             "strict-transport-security",
@@ -150,7 +172,7 @@ describe("proxy", () => {
     });
 
     it("não mexe no pedido sem X-Forwarded-Proto, como o healthcheck de dentro do container", () => {
-      const response = proxy(request("/pt"));
+      const response = proxy(request("/pt/"));
 
       expect(response.status).toBe(200);
       expect(response.headers.get("strict-transport-security")).toBeNull();
@@ -160,7 +182,7 @@ describe("proxy", () => {
       env.server.publicOrigin = "http://127.0.0.1:3100";
 
       const response = proxy(
-        request("/pt", { host: "127.0.0.1:3100", protocol: "http" }),
+        request("/pt/", { host: "127.0.0.1:3100", protocol: "http" }),
       );
 
       expect(response.headers.get("location")).toBeNull();

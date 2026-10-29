@@ -1,11 +1,11 @@
 # portfolio
 
 Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.arthru.com**:
-site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e XLSX gerado
+site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e DOCX gerado
 a partir dele.
 
-> Em construção. O painel e o site já funcionam; a foto, o formulário de contato e o currículo
-> chegam nas próximas entregas.
+> Em construção. O site, o painel e o currículo já funcionam; faltam o acabamento, a otimização
+> para buscadores e o lançamento.
 
 ## Arquitetura
 
@@ -42,13 +42,18 @@ recusa a conexão de recarregamento automático vinda de outra origem.
 
 ## Site
 
-- **Endereços:** `/pt` e `/en`, a URL canônica de cada idioma. A raiz `/` leva ao idioma do
-  navegador (`Accept-Language`), com um redirecionamento temporário que varia com o cabeçalho.
-  Um endereço que não existe dá um 404 nos dois idiomas (`global-not-found`).
+- **Endereços:** `/pt/` e `/en/`, a URL canônica de cada idioma, com a barra no fim: o link de
+  uma seção fica `/pt/#experiencia`. A raiz `/` leva ao idioma do navegador (`Accept-Language`),
+  com um redirecionamento temporário que varia com o cabeçalho, e `/pt` leva a `/pt/` com um
+  permanente. Quem acrescenta a barra é o proxy, só nessas páginas: o Next não redireciona nada
+  (`skipTrailingSlashRedirect`), para o `/api/health` nunca ser redirecionado. Um endereço que
+  não existe dá um 404 nos dois idiomas (`global-not-found`).
 - **Conteúdo:** a última revisão publicada, só com os blocos e itens visíveis, na ordem do
-  painel. O cabeçalho monta o menu a partir dos blocos. Os textos longos aceitam um subconjunto
-  de Markdown (parágrafos, listas, negrito, itálico, código e links), que vira elemento React,
-  nunca HTML cru, e só aceita links `https:`, `http:` e `mailto:`.
+  painel. O menu do cabeçalho leva às seções principais (sobre, experiência, projetos, formação
+  e prêmios); habilidades, idiomas e blocos livres ficam só na página, e o contato fica com o
+  botão "Fale comigo", que no celular vira o último item do menu. Os textos longos aceitam um
+  subconjunto de Markdown (parágrafos, listas, negrito, itálico, código e links), que vira
+  elemento React, nunca HTML cru, e só aceita links `https:`, `http:` e `mailto:`.
 - **Tema:** segue o do sistema, e um botão troca entre sistema, claro e escuro. A escolha fica no
   `localStorage`, sem cookie, e um script curto no `<head>` a aplica antes da primeira pintura.
 - **Visual:** quase preto com verde, títulos grandes com degradê, uma rede de partículas atrás do
@@ -69,6 +74,40 @@ recusa a conexão de recarregamento automático vinda de outra origem.
   formulário some e fica o e-mail.
 - **Ícones:** `icon.svg`, `favicon.ico` e `apple-icon.png` em `src/app`, pela convenção de
   arquivos do Next.
+
+## Currículo
+
+O currículo sai do mesmo conteúdo do site, em PDF e DOCX, em português e inglês, num formato
+pensado para recrutadores e sistemas de triagem (ATS).
+
+- **O que entra:** o que está marcado "No currículo" em cada item (mesmo oculto no site), os
+  destaques marcados e o resumo profissional da tela Currículo. As seções seguem a ordem do
+  mercado, e não a do site: resumo, experiência, habilidades, projetos, formação, prêmios e
+  idiomas. Experiências, cursos e prêmios vêm do mais recente para o mais antigo, e os meses saem
+  como `MM/AAAA`.
+- **Um modelo, dois arquivos:** `buildResumeModel` monta o currículo de um idioma em texto puro
+  (o Markdown vira texto, e os links ficam com o endereço escrito), e `layoutResume` o dispõe em
+  seções e linhas. Os dois geradores só desenham esse layout, então o PDF e o DOCX têm o mesmo
+  texto, na mesma ordem.
+- **PDF** (pdfkit): A4, uma coluna, sem tabela, imagem, cabeçalho ou rodapé de página. Texto real,
+  com a Inter embutida (licença OFL, do Fontsource) e os acentos certos ao copiar. Sai marcado
+  (tagged), com o idioma, título, autor, assunto e palavras-chave. Um caractere que a fonte não
+  tem vira um equivalente, como `→` em `->`.
+- **DOCX** (docx): para quem precisa de um arquivo editável ou de um formato que a plataforma da
+  vaga aceite. Uma coluna, sem tabela nem caixa de texto, com os estilos do próprio Word (o nome
+  em Título 1, as seções em Título 2, listas com marcador de verdade), Calibri, o idioma do texto
+  e as propriedades do documento.
+- **Quando é gerado:** ao publicar, antes de gravar a revisão; se o gerador falhar, nada é
+  publicado. Os quatro arquivos vão para `/data/cv/<revisão>-v<formato>/`, e os da revisão
+  anterior são apagados. Se faltarem (uma revisão de antes do currículo, uma versão nova do
+  formato), a rota os gera no primeiro pedido.
+- **Endereços fixos:** `/cv/curriculo.pdf`, `/cv/curriculo.docx`, `/cv/resume.pdf` e
+  `/cv/resume.docx`. A resposta sai com `Cache-Control: no-cache` e a ETag da revisão: o
+  navegador e a Cloudflare conferem antes de usar a cópia e nunca servem um currículo velho.
+- **No site:** o botão "Baixar currículo", no topo e no rodapé, abre a lista dos arquivos nos dois
+  idiomas, com o tamanho de cada um.
+- **Telefone:** nunca vai para os arquivos públicos. A versão completa, com o telefone do campo
+  privado, sai só no painel.
 
 ## Painel
 
@@ -106,12 +145,15 @@ também derruba as sessões abertas.
   recusado, em vez de apagar a outra alteração; mudar outra parte não atrapalha.
 - Sair de uma tela com alterações não salvas pede confirmação. A ordem dos itens muda por
   botões, que funcionam pelo teclado.
-- **Publicar**, na visão geral, grava uma revisão nova e expira o cache das páginas (`updateTag`):
-  o site muda na próxima visita, sem deploy. Antes, a publicação confere o rascunho: todo texto
+- **Publicar**, na visão geral, gera o currículo, grava uma revisão nova e expira o cache das
+  páginas (`updateTag`): o site muda na próxima visita, sem deploy. Antes, a publicação confere o rascunho: todo texto
   que vai para o site ou para o currículo precisa dos dois idiomas, os campos principais de cada
   item precisam estar preenchidos e ao menos um bloco precisa estar visível. O que falta aparece
   na visão geral, com link para a tela que corrige. A página publica exatamente a versão que
   mostrava: se o rascunho mudou em outra aba, a publicação é recusada.
+- **Currículo:** o resumo profissional e os arquivos do rascunho, gerados na hora para conferir
+  antes de publicar (`/admin/cv/<arquivo>`). Ali também sai a versão completa, com o telefone,
+  que é entregue só nessa resposta e nunca gravada.
 - **Histórico:** as revisões publicadas, da mais recente para a mais antiga, cada uma com
   download em YAML e **Restaurar como rascunho**. Restaurar não publica, e as revisões nunca
   mudam: o banco recusa alterá-las ou apagá-las.
@@ -151,7 +193,9 @@ também derruba as sessões abertas.
 
 ## Contrato com o servidor
 
-- O container escuta em `0.0.0.0:3000`, roda como o uid 1001 e grava apenas em `/data`.
+- O container escuta em `0.0.0.0:3000`, roda como o uid 1001 e grava apenas em `/data`: o banco,
+  as fotos (`/data/media`) e os arquivos do currículo (`/data/cv`, que o app gera de novo se
+  sumirem).
 - `GET /api/health` responde 200 com o banco aberto e as migrations aplicadas, e 503 caso
   contrário. O corpo traz a versão da imagem e o status do último deploy.
 - Nenhum domínio fica no código: as URLs absolutas e a regra de indexação saem do

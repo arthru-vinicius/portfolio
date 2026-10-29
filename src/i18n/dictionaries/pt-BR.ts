@@ -108,6 +108,39 @@ export const ptBR = {
     hybrid: "Híbrido",
     remote: "Remoto",
   },
+  /**
+   * O currículo em PDF e DOCX. Os títulos das seções são os que o mercado usa
+   * e os sistemas de triagem (ATS) reconhecem; título criativo atrapalha.
+   */
+  resume: {
+    sections: {
+      summary: "Resumo",
+      experience: "Experiência profissional",
+      skills: "Habilidades",
+      projects: "Projetos",
+      education: "Formação acadêmica",
+      awards: "Prêmios",
+      languages: "Idiomas",
+    },
+    documentTitle: "{name} – Currículo",
+    /** Nome do arquivo baixado, depois do nome da pessoa: `ana-exemplo-curriculo.pdf`. */
+    fileName: "curriculo",
+    present: "atual",
+    period: "{start} – {end}",
+    expectedEnd: "conclusão prevista em {date}",
+    inProgress: "em andamento",
+    technologies: "Tecnologias",
+    code: "Código",
+    website: "Site",
+  },
+  /** O botão "Baixar currículo", no topo e no rodapé do site. */
+  resumeDownload: {
+    button: "Baixar currículo",
+    /** O grupo dos arquivos deste idioma, escrito no próprio idioma. */
+    language: "Em português",
+    pdf: "PDF",
+    docx: "Word (DOCX)",
+  },
   theme: {
     system: "Tema do sistema",
     light: "Tema claro",

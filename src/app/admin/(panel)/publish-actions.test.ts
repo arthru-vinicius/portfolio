@@ -1,3 +1,6 @@
+import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,6 +25,7 @@ import { versionOf } from "./draft-parts";
 const state = vi.hoisted(() => ({
   admin: undefined as unknown as AdminEnv,
   db: undefined as unknown as DatabaseSync,
+  directory: "",
 }));
 
 vi.mock(
@@ -45,16 +49,30 @@ vi.mock("next/cache", () => ({
   cacheLife: vi.fn(),
   cacheTag: vi.fn(),
 }));
-vi.mock("@/lib/env", () => ({ getAdminEnv: () => state.admin }));
+vi.mock("@/lib/env", () => ({
+  getAdminEnv: () => state.admin,
+  getServerEnv: () => ({
+    databasePath: path.join(state.directory, "portfolio.db"),
+  }),
+}));
 vi.mock("@/lib/db/database", () => ({ getDatabase: () => state.db }));
+// O gerador de verdade tem os próprios testes; aqui basta saber que ele rodou.
+vi.mock("@/lib/resume/render", () => ({
+  renderPublicResumeFiles: vi.fn(
+    async () => new Map([["curriculo.pdf", Buffer.from("pdf")]]),
+  ),
+}));
 
 const { revalidatePath, updateTag } = await import("next/cache");
+const { renderPublicResumeFiles } = await import("@/lib/resume/render");
 const { publishDraft } = await import("./publish-actions");
 
 const copy = (): PortfolioDocument => structuredClone(portfolioFixture);
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  state.directory = await mkdtemp(path.join(tmpdir(), "publicar-"));
   state.admin = readyAdminEnv();
   state.db = createTestDatabase();
   if (state.admin.status !== "ready") {
@@ -69,8 +87,9 @@ beforeEach(() => {
   );
 });
 
-afterEach(() => {
+afterEach(async () => {
   state.db.close();
+  await rm(state.directory, { recursive: true, force: true });
 });
 
 describe("publishDraft", () => {
@@ -93,6 +112,48 @@ describe("publishDraft", () => {
     ]);
     expect(updateTag).toHaveBeenCalledWith(CONTENT_CACHE_TAG);
     expect(revalidatePath).toHaveBeenCalledWith("/admin", "layout");
+  });
+
+  it("gera o currículo sem campos privados e grava na pasta da revisão", async () => {
+    const document = copy();
+    saveDraft(state.db, document, 0);
+
+    await publishDraft({ version: versionOf(document), note: "" });
+
+    const [rendered] = vi.mocked(renderPublicResumeFiles).mock.calls[0] ?? [];
+    expect(rendered?.profile).not.toHaveProperty("private");
+    expect(await readdir(path.join(state.directory, "cv", "1-v1"))).toEqual([
+      "curriculo.pdf",
+    ]);
+  });
+
+  it("não publica nada se o currículo não for gerado", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(renderPublicResumeFiles).mockRejectedValueOnce(
+      new Error("fonte faltando"),
+    );
+    const document = copy();
+    saveDraft(state.db, document, 0);
+
+    await expect(
+      publishDraft({ version: versionOf(document), note: "" }),
+    ).resolves.toEqual({ ok: false, reason: "resume-failed" });
+    expect(listRevisions(state.db)).toEqual([]);
+    expect(updateTag).not.toHaveBeenCalled();
+  });
+
+  it("não publica duas vezes se outra aba publicou durante a geração", async () => {
+    const document = copy();
+    saveDraft(state.db, document, 0);
+    vi.mocked(renderPublicResumeFiles).mockImplementationOnce(async () => {
+      insertRevision(state.db, document);
+      return new Map();
+    });
+
+    await expect(
+      publishDraft({ version: versionOf(document), note: "" }),
+    ).resolves.toEqual({ ok: false, reason: "unchanged" });
+    expect(listRevisions(state.db)).toHaveLength(1);
   });
 
   it("não publica de novo o que já está no ar", async () => {
