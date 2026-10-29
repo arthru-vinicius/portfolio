@@ -4,8 +4,8 @@ Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.art
 site em português e inglês, um painel para editar o conteúdo e o currículo gerado a partir dele,
 em PDF e DOCX para quem lê e em Markdown e JSON Resume para assistentes de IA.
 
-> Em construção. O site, o painel, o currículo e a otimização para buscadores e assistentes de IA
-> já funcionam; faltam o acabamento (cabeçalhos de segurança, Web Analytics e auditoria) e o
+> Em construção. O site, o painel, o currículo, a otimização para buscadores e assistentes de IA
+> e os cabeçalhos de segurança já funcionam; faltam a auditoria final, o README em inglês e o
 > lançamento.
 
 ## Arquitetura
@@ -105,6 +105,30 @@ Tudo sai do conteúdo publicado e do `PUBLIC_ORIGIN`; nenhum domínio fica no c�
   também aponta o currículo em texto e em dados com `<link rel="alternate">` (`text/markdown` e
   `application/json`).
 
+## Segurança e medição
+
+O proxy põe os mesmos cabeçalhos em toda resposta (o `/api/health` fica de fora, como o
+contrato com o servidor pede):
+
+- **Content Security Policy** sem nonce. A casca de cada idioma sai pronta do build, e o Next não
+  combina nonce com essa pré-renderização parcial; por isso os scripts embutidos que ele escreve
+  (os dados do React e o script do tema) pedem `'unsafe-inline'`. A política limita o resto:
+  scripts só do próprio site, do Turnstile e do Web Analytics; conexões só com o próprio site e
+  com o receptor do Web Analytics; o único iframe é o do Turnstile; nenhum site põe estas páginas
+  num iframe (`frame-ancestors 'none'`); sem `<object>` e sem `<base>` de fora. No painel, a CSP
+  não deixa o Web Analytics entrar. No `next dev`, ela libera `eval` e WebSocket para a recarga
+  ao vivo.
+- **`X-Content-Type-Options: nosniff`**, **`Referrer-Policy: strict-origin-when-cross-origin`**,
+  **`X-Frame-Options: DENY`**, **`Cross-Origin-Opener-Policy: same-origin`** e uma
+  **`Permissions-Policy`** que desliga câmera, microfone, localização, pagamento e afins.
+- **O zod sem `eval`:** o painel valida no navegador com os mesmos schemas, e o zod roda em modo
+  `jitless`, sem tentar compilar os validadores com `Function`.
+- **Estáticos:** os arquivos de `/_next/static` têm o nome tirado do conteúdo e já saem do Next
+  com `Cache-Control: public, max-age=31536000, immutable`.
+- **Cloudflare Web Analytics** (sem cookie e sem banner): só nas páginas públicas, com o token em
+  `WEB_ANALYTICS_TOKEN`. Sem a variável, o site não carrega o script. O script entra depois que
+  a página termina de carregar, para não disputar a banda com o conteúdo.
+
 ## Currículo
 
 O currículo sai do mesmo conteúdo do site, em português e inglês: em PDF e DOCX, num formato
@@ -130,7 +154,8 @@ assistentes de IA e ferramentas que leem texto ou dados sem adivinhar o layout.
   e as propriedades do documento.
 - **Markdown:** o texto do PDF, sem o layout: o nome como `#`, as seções como `##`, cada item
   como `###`, listas e links de verdade, com o texto escapado para nada virar marcação por
-  acidente. Leva também o link do portfólio no idioma.
+  acidente. Leva também o link do portfólio no idioma, se nenhum link do perfil já aponta para o
+  site.
 - **JSON Resume** (`jsonresume.org`, v1.0.0): os mesmos dados em campos padrão (`basics`, `work`,
   `education`, `skills`, `projects`, `awards`, `languages`), com as datas em `AAAA-MM`, as
   tecnologias em `keywords` e a conclusão prevista de um curso em andamento como `endDate`. Sem
@@ -243,6 +268,8 @@ também derruba as sessões abertas.
 - Nenhum domínio fica no código: as URLs absolutas e a regra de indexação saem do
   `PUBLIC_ORIGIN`. Só o host dele pode ser indexado, e só com `ALLOW_INDEXING=true`. As outras
   respostas levam `X-Robots-Tag: noindex`.
+- `WEB_ANALYTICS_TOKEN`, opcional, liga o Cloudflare Web Analytics nas páginas públicas. O token
+  aparece no HTML, mas é dado da conta: fica no servidor, nunca no repositório.
 - O job de CI se chama `verify` e roda em ARM64, a mesma arquitetura do servidor.
 
 ## Desenvolvimento com IA

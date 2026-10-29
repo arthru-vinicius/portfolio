@@ -10,6 +10,7 @@ import { localeFromPath, localeHomePath, negotiateLocale } from "@/i18n/config";
 import { getAdminEnv, getServerEnv } from "@/lib/env";
 import { isAllowedHost } from "@/lib/hosts";
 import { isIndexable } from "@/lib/indexing";
+import { securityHeaders } from "@/lib/security-headers";
 
 /** Cabeçalhos de toda resposta do painel: nada dele vai para cache ou busca. */
 const ADMIN_HEADERS = {
@@ -85,6 +86,8 @@ function adminResponse(
  * - **Painel** (`/admin`): fora da `ADMIN_HOSTS`, 404; sem configuração, 503;
  *   navegação sem sessão vai para o login. É só a primeira barreira: cada
  *   página e cada Server Action do painel confere a sessão de novo.
+ * - **Segurança:** toda resposta leva a CSP e os outros cabeçalhos de
+ *   `securityHeaders`; a do painel, sem o Web Analytics.
  *
  * @param request - O pedido recebido.
  * @returns A resposta: a rota seguindo com os cabeçalhos acrescentados, um
@@ -145,6 +148,13 @@ export function proxy(request: NextRequest): NextResponse {
     }
   }
 
+  const security = securityHeaders({
+    area: isAdminPath(pathname) ? "admin" : "site",
+    development: serverEnv.nodeEnv === "development",
+  });
+  for (const [name, value] of Object.entries(security)) {
+    response.headers.set(name, value);
+  }
   if (httpsSite && protocol === "https") {
     response.headers.set("Strict-Transport-Security", HSTS_HEADER);
   }

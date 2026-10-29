@@ -3,4 +3,4 @@
  * que sai no arquivo: os arquivos gravados com a versão anterior deixam de
  * valer e são gerados de novo no primeiro pedido.
  */
-export const RESUME_FORMAT_VERSION = 2;
+export const RESUME_FORMAT_VERSION = 3;

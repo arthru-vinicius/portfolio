@@ -13,6 +13,7 @@ describe("getServerEnv", () => {
       deployStatusFile: null,
       publicOrigin: "http://localhost:3000",
       allowIndexing: false,
+      webAnalyticsToken: null,
     });
   });
 
@@ -33,6 +34,7 @@ describe("getServerEnv", () => {
       deployStatusFile: "/deploy/last-deploy.json",
       publicOrigin: "https://portfolio.example.com",
       allowIndexing: false,
+      webAnalyticsToken: null,
     });
   });
 
@@ -58,6 +60,23 @@ describe("getServerEnv", () => {
     "https://user@portfolio.example.com",
   ])("trata a origem %j como ausente, sem derrubar o app", (value) => {
     expect(getServerEnv({ PUBLIC_ORIGIN: value }).publicOrigin).toBeNull();
+  });
+
+  it("aceita o token do Web Analytics só com letras e números", () => {
+    const token = "0123456789abcdef0123456789abcdef";
+    expect(getServerEnv({ WEB_ANALYTICS_TOKEN: token }).webAnalyticsToken).toBe(
+      token,
+    );
+    for (const value of [
+      "",
+      "curto",
+      `${token}"><script>`,
+      "a b c d e f g h i j",
+    ]) {
+      expect(
+        getServerEnv({ WEB_ANALYTICS_TOKEN: value }).webAnalyticsToken,
+      ).toBeNull();
+    }
   });
 
   it("só libera a indexação com o valor exato true", () => {

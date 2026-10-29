@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+// O painel valida com estes schemas também no navegador, e a CSP do site não
+// deixa usar `eval`. Sem isto, o zod testa `Function("")` para compilar os
+// validadores, e o navegador registra a tentativa como violação da CSP.
+z.config({ jitless: true });
+
 /**
  * Versão atual do documento de conteúdo. Só sobe com mudança incompatível: um
  * campo novo e opcional não muda a versão, e assim a imagem anterior continua

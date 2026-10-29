@@ -189,6 +189,37 @@ describe("proxy", () => {
     });
   });
 
+  describe("cabeçalhos de segurança", () => {
+    it("manda a CSP e os outros cabeçalhos no site, com o Web Analytics", () => {
+      for (const path of ["/pt/", "/", "/cv/curriculo.pdf"]) {
+        const headers = proxy(request(path)).headers;
+
+        expect(headers.get("content-security-policy")).toContain(
+          "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+        );
+        expect(headers.get("x-content-type-options")).toBe("nosniff");
+        expect(headers.get("x-frame-options")).toBe("DENY");
+        expect(headers.get("referrer-policy")).toBe(
+          "strict-origin-when-cross-origin",
+        );
+        expect(headers.get("cross-origin-opener-policy")).toBe("same-origin");
+      }
+    });
+
+    it("no painel, a CSP não deixa o Web Analytics entrar", () => {
+      for (const response of [
+        proxy(request("/admin/login")),
+        proxy(request("/admin")),
+        proxy(request("/admin", { host: "outro.example.com" })),
+      ]) {
+        const csp = response.headers.get("content-security-policy") ?? "";
+
+        expect(csp).toContain("frame-src https://challenges.cloudflare.com");
+        expect(csp).not.toContain("cloudflareinsights");
+      }
+    });
+  });
+
   describe("painel", () => {
     it("responde 404 fora dos hosts do painel, sem dizer nada dele", async () => {
       const response = proxy(request("/admin/login", { host: "example.com" }));
