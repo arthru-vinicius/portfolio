@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { ProfilePhoto, SocialLink } from "@/content/schema";
 import { fillTemplate } from "@/i18n/template";
 
@@ -20,6 +22,7 @@ export type ProfileLink = SocialLink & { name: string };
  * @param props.links - Links do perfil que o site mostra.
  * @param props.projectsHref - Âncora dos projetos, se a seção existir.
  * @param props.contactHref - Âncora do contato.
+ * @param props.resumeMenu - O botão "Baixar currículo", quando há currículo.
  * @param props.context - Idioma e textos da página.
  */
 export function Hero({
@@ -30,6 +33,7 @@ export function Hero({
   links,
   projectsHref,
   contactHref,
+  resumeMenu,
   context,
 }: {
   name: string;
@@ -39,6 +43,7 @@ export function Hero({
   links: readonly ProfileLink[];
   projectsHref: string | null;
   contactHref: string;
+  resumeMenu?: ReactNode;
   context: SiteContext;
 }) {
   const { dictionary: dict } = context;
@@ -46,7 +51,7 @@ export function Hero({
     <section
       id="topo"
       aria-labelledby="topo-titulo"
-      className="relative scroll-mt-20 overflow-hidden"
+      className="relative scroll-mt-20 overflow-x-clip"
     >
       <HeroParticles />
       <div
@@ -108,6 +113,7 @@ export function Hero({
             >
               {dict.site.contactCta}
             </a>
+            {resumeMenu}
           </div>
           {links.length > 0 && (
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-1">

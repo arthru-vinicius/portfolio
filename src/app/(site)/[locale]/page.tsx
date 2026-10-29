@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { SitePage } from "@/components/site/site-page";
-import { readPublishedContent } from "@/content/read-published";
+import {
+  readPublishedContent,
+  type PublishedContent,
+} from "@/content/read-published";
 import {
   localeFromPath,
   localePaths,
@@ -14,6 +17,8 @@ import {
 import { getDictionary } from "@/i18n/dictionaries";
 import { fillTemplate } from "@/i18n/template";
 import { getContactEnv, getServerEnv } from "@/lib/env";
+import { resumeDownloads, type ResumeDownload } from "@/lib/resume/catalog";
+import { ensureResumeFiles, resumeDirectoryFor } from "@/lib/resume/storage";
 
 import { ContactForm } from "./contact-form";
 
@@ -78,6 +83,33 @@ function Placeholder({ locale }: { locale: Locale }) {
   );
 }
 
+/**
+ * Os arquivos do currículo publicado, com o tamanho de cada um. Se faltarem
+ * (a revisão é de antes do currículo, por exemplo), são gerados agora. Se a
+ * geração falhar, o site continua no ar, só sem o botão.
+ */
+async function publishedResume(
+  content: PublishedContent,
+): Promise<ResumeDownload[] | undefined> {
+  const { databasePath } = getServerEnv();
+  if (databasePath === null) {
+    return undefined;
+  }
+  try {
+    const sizes = await ensureResumeFiles(
+      resumeDirectoryFor(databasePath),
+      content,
+    );
+    return resumeDownloads(content.document.profile.displayName, {
+      basePath: "/cv",
+      sizes,
+    });
+  } catch (error) {
+    console.error("[cv] o currículo não ficou disponível", error);
+    return undefined;
+  }
+}
+
 async function PublishedSite({ locale }: { locale: Locale }) {
   // O conteúdo vem do banco, que o build não tem: daqui para baixo, tudo é
   // do pedido. A leitura em si fica em cache até a próxima publicação.
@@ -88,6 +120,7 @@ async function PublishedSite({ locale }: { locale: Locale }) {
   }
   const { publicOrigin } = getServerEnv();
   const contact = getContactEnv();
+  const resume = await publishedResume(content);
   return (
     <SitePage
       document={content.document}
@@ -102,6 +135,7 @@ async function PublishedSite({ locale }: { locale: Locale }) {
         ) : undefined
       }
       ownHost={publicOrigin === null ? null : new URL(publicOrigin).hostname}
+      resume={resume}
     />
   );
 }

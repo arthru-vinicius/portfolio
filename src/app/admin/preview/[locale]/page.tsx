@@ -9,6 +9,7 @@ import { localeFromPath, localePaths } from "@/i18n/config";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getContactEnv, getServerEnv } from "@/lib/env";
+import { resumeDownloads } from "@/lib/resume/catalog";
 
 import { ContactForm } from "../../../(site)/[locale]/contact-form";
 import { jakarta, jetbrains } from "../../../fonts";
@@ -69,6 +70,10 @@ export default async function PreviewPage({
           ownHost={
             publicOrigin === null ? null : new URL(publicOrigin).hostname
           }
+          resume={resumeDownloads(draft.document.profile.displayName, {
+            basePath: "/admin/cv",
+            suffix: adminMessages.resume.draftSuffix,
+          })}
         />
       )}
       <aside

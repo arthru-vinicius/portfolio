@@ -21,8 +21,8 @@ humana em todo pull request. As regras valem igualmente para agentes e pessoas.
   sem porta aberta no servidor, TLS e cache de estáticos na borda da Cloudflare.
 - **Conteúdo em SQLite**, descrito por um schema único (zod) que tipa o painel, as páginas e
   as exportações. O painel mantém um rascunho e um histórico de revisões publicadas.
-- **Publicar** grava a revisão e invalida o cache das páginas: o site muda em segundos, sem
-  novo deploy.
+- **Publicar** gera o currículo (PDF e XLSX, em `/data/cv`), grava a revisão e invalida o cache
+  das páginas: o site muda em segundos, sem novo deploy.
 - **Deploy contínuo sem credencial no GitHub:** o servidor acompanha a `main` e, quando o
   check `verify` de um commit fica verde, constrói a imagem, troca o container e volta
   sozinho para a versão anterior se o novo não passar no healthcheck.

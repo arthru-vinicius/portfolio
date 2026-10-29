@@ -108,6 +108,91 @@ export const ptBR = {
     hybrid: "Híbrido",
     remote: "Remoto",
   },
+  /**
+   * O currículo em PDF e XLSX. Os títulos das seções são os que o mercado usa
+   * e os sistemas de triagem (ATS) reconhecem; título criativo atrapalha.
+   */
+  resume: {
+    sections: {
+      summary: "Resumo",
+      experience: "Experiência profissional",
+      skills: "Habilidades",
+      projects: "Projetos",
+      education: "Formação acadêmica",
+      awards: "Prêmios",
+      languages: "Idiomas",
+    },
+    documentTitle: "{name} – Currículo",
+    /** Nome do arquivo baixado, depois do nome da pessoa: `ana-exemplo-curriculo.pdf`. */
+    fileName: "curriculo",
+    present: "atual",
+    period: "{start} – {end}",
+    expectedEnd: "conclusão prevista em {date}",
+    inProgress: "em andamento",
+    technologies: "Tecnologias",
+    code: "Código",
+    website: "Site",
+    yes: "Sim",
+    no: "Não",
+    /** Abas da planilha: até 31 caracteres, sem `/ \ ? * [ ]`. */
+    sheets: {
+      profile: "Perfil",
+      experience: "Experiência",
+      skills: "Habilidades",
+      projects: "Projetos",
+      education: "Formação",
+      awards: "Prêmios",
+      languages: "Idiomas",
+    },
+    /** Linhas da aba Perfil. */
+    profileFields: {
+      fullName: "Nome completo",
+      headline: "Título",
+      location: "Local",
+      email: "E-mail",
+      phone: "Telefone",
+      summary: "Resumo",
+    },
+    /** Cabeçalhos das abas de lista. */
+    columns: {
+      field: "Campo",
+      value: "Valor",
+      role: "Cargo",
+      company: "Empresa",
+      location: "Local",
+      workMode: "Modalidade",
+      start: "Início",
+      end: "Fim",
+      current: "Atual",
+      highlights: "Destaques",
+      technologies: "Tecnologias",
+      group: "Grupo",
+      skills: "Habilidades",
+      name: "Nome",
+      summary: "Resumo",
+      repository: "Código",
+      website: "Site",
+      degree: "Curso",
+      institution: "Instituição",
+      inProgress: "Em andamento",
+      expectedEnd: "Conclusão prevista",
+      notes: "Observações",
+      award: "Prêmio",
+      issuer: "Concedido por",
+      date: "Data",
+      description: "Descrição",
+      language: "Idioma",
+      level: "Nível",
+    },
+  },
+  /** O botão "Baixar currículo", no topo e no rodapé do site. */
+  resumeDownload: {
+    button: "Baixar currículo",
+    /** O grupo dos arquivos deste idioma, escrito no próprio idioma. */
+    language: "Em português",
+    pdf: "PDF",
+    xlsx: "Planilha XLSX",
+  },
   theme: {
     system: "Tema do sistema",
     light: "Tema claro",

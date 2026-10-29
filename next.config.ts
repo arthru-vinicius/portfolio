@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   reactCompiler: true,
   poweredByHeader: false,
+  // Os geradores do currículo rodam com o `require` do Node, fora do bundle:
+  // o pdfkit lê arquivos de dados ao lado do próprio código.
+  serverExternalPackages: ["pdfkit", "exceljs"],
   experimental: {
     // Com duas raízes de layout (o site por idioma e o painel), não há um
     // layout de onde montar o 404; o `global-not-found.tsx` é a saída que a

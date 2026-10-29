@@ -41,6 +41,10 @@ const ROUTE_HANDLERS: Record<
   string,
   { load: () => Promise<object>; methods: string[] }
 > = {
+  "src/app/admin/cv/[file]/route.ts": {
+    load: () => import("./cv/[file]/route"),
+    methods: ["GET"],
+  },
   "src/app/admin/export/route.ts": {
     load: () => import("./export/route"),
     methods: ["GET"],

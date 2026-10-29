@@ -1,27 +1,16 @@
 import type { ReactNode } from "react";
 
-/**
- * O subconjunto de Markdown dos textos do painel: parágrafos (separados por
- * linha em branco), listas com `- ` ou `1. `, **negrito**, *itálico*,
- * `código` e [links](https://exemplo.com).
- *
- * Tudo vira elemento React, nunca HTML cru: um `<script>` no texto aparece
- * como texto. Links só com `https:`, `http:` ou `mailto:`; outro esquema (como
- * `javascript:`) deixa só o texto do link.
+import {
+  INLINE_PATTERN,
+  safeHref,
+  splitBlocks,
+  toRuns,
+} from "@/content/markdown-syntax";
+
+/*
+ * Os textos do painel viram elemento React, nunca HTML cru: um `<script>` no
+ * texto aparece como texto. A gramática fica em `@/content/markdown-syntax`.
  */
-
-const INLINE =
-  /(`[^`\n]+`)|\[([^\]\n]+)\]\(([^)\s]+)\)|\*\*([^*\n]+?)\*\*|\*([^*\n]+?)\*|(?<!\w)_([^_\n]+?)_(?!\w)/g;
-
-const ALLOWED_PROTOCOLS = new Set(["https:", "http:", "mailto:"]);
-
-function safeHref(url: string): string | null {
-  try {
-    return ALLOWED_PROTOCOLS.has(new URL(url).protocol) ? url : null;
-  } catch {
-    return null;
-  }
-}
 
 type InlineOptions = { newTabLabel: string; linkClassName?: string };
 
@@ -33,7 +22,7 @@ function renderInline(
   const nodes: ReactNode[] = [];
   let last = 0;
   // Cada chamada usa a própria cópia: a expressão tem estado (`lastIndex`).
-  const pattern = new RegExp(INLINE.source, "g");
+  const pattern = new RegExp(INLINE_PATTERN.source, "g");
   for (
     let match = pattern.exec(text);
     match !== null;
@@ -85,39 +74,6 @@ function renderInline(
   return nodes;
 }
 
-type Run =
-  | { kind: "paragraph"; lines: string[] }
-  | { kind: "ul" | "ol"; items: string[] };
-
-const BULLET = /^\s*[-*]\s+(.*)$/;
-const NUMBERED = /^\s*\d+[.)]\s+(.*)$/;
-
-function toRuns(block: string): Run[] {
-  const runs: Run[] = [];
-  for (const line of block.split("\n")) {
-    const bullet = BULLET.exec(line);
-    const numbered = bullet === null ? NUMBERED.exec(line) : null;
-    const kind =
-      bullet !== null ? "ul" : numbered !== null ? "ol" : "paragraph";
-    const current = runs.at(-1);
-    if (kind === "paragraph") {
-      if (current?.kind === "paragraph") {
-        current.lines.push(line.trim());
-      } else {
-        runs.push({ kind, lines: [line.trim()] });
-      }
-      continue;
-    }
-    const item = (bullet ?? numbered)?.[1] ?? "";
-    if (current?.kind === kind) {
-      current.items.push(item);
-    } else {
-      runs.push({ kind, items: [item] });
-    }
-  }
-  return runs;
-}
-
 /**
  * Mostra um texto do painel escrito no subconjunto de Markdown do site.
  *
@@ -139,11 +95,7 @@ export function Markdown({
   linkClassName?: string;
 }) {
   const options: InlineOptions = { newTabLabel, linkClassName };
-  const blocks = text
-    .replace(/\r\n?/g, "\n")
-    .split(/\n\s*\n/)
-    .map((block) => block.trim())
-    .filter((block) => block !== "");
+  const blocks = splitBlocks(text);
 
   return (
     <div className={className}>

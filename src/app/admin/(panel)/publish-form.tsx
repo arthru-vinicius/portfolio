@@ -33,6 +33,8 @@ function feedbackFor(result: PublishResult): Feedback {
       return { tone: "error", message: messages.conflict };
     case "newer-version":
       return { tone: "error", message: messages.newerVersion };
+    case "resume-failed":
+      return { tone: "error", message: messages.resumeFailed };
   }
 }
 

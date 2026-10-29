@@ -307,6 +307,52 @@ test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   await expect(title).toContainText("Full Stack Developer");
 });
 
+test("o site oferece o currículo da publicação, em PDF e XLSX", async ({
+  page,
+}) => {
+  await page.goto("/pt");
+  const hero = page.locator("#topo");
+  await hero.getByText(ptBR.resumeDownload.button).click();
+  const pdf = hero.getByRole("link", { name: /^PDF/ }).first();
+  await expect(pdf).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    pdf.click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(
+    /^ana-publicada-\d+-curriculo\.pdf$/,
+  );
+  await page.keyboard.press("Escape");
+  await expect(hero.locator("details")).not.toHaveAttribute("open");
+
+  // A URL é fixa; a ETag é da revisão, e a cópia de quem já baixou vale.
+  const file = await page.request.get("/cv/curriculo.pdf");
+  expect(file.status()).toBe(200);
+  expect(file.headers()["content-type"]).toBe("application/pdf");
+  expect(file.headers()["cache-control"]).toBe("public, no-cache");
+  expect((await file.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  const etag = file.headers().etag ?? "";
+  const revalidated = await page.request.get("/cv/curriculo.pdf", {
+    headers: { "If-None-Match": etag },
+  });
+  expect(revalidated.status()).toBe(304);
+
+  const sheet = await page.request.get("/cv/resume.xlsx");
+  expect(sheet.headers()["content-type"]).toBe(
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+  expect((await sheet.body()).subarray(0, 2).toString()).toBe("PK");
+
+  // O painel gera a versão completa do rascunho, só para quem tem sessão.
+  const full = await page.request.get("/admin/cv/curriculo.pdf?full=1");
+  expect(full.status()).toBe(200);
+  expect(full.headers()["content-disposition"]).toMatch(
+    /-curriculo-completo\.pdf"$/,
+  );
+});
+
 test("envia uma mensagem pelo formulário de contato", async ({ page }) => {
   const form = ptBR.contactForm;
   const token = page.locator('input[name="turnstileToken"]');

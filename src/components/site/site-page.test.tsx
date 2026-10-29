@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { toPublicDocument } from "@/content/public-projection";
 import { en } from "@/i18n/dictionaries/en";
 import { ptBR } from "@/i18n/dictionaries/pt-BR";
+import { resumeDownloads } from "@/lib/resume/catalog";
 
 import {
   FIXTURE_PHONE,
@@ -66,5 +67,40 @@ describe("SitePage", () => {
     expect(html).toContain(`id="${en.anchors.experience}"`);
     expect(html).toContain(en.site.present);
     expect(html).not.toContain(ptBR.site.contactCta);
+  });
+
+  it("oferece o currículo nos dois idiomas, com o tamanho, no topo e no rodapé", () => {
+    const html = renderToStaticMarkup(
+      <SitePage
+        document={toPublicDocument(structuredClone(portfolioFixture))}
+        locale="en"
+        ownHost={null}
+        resume={resumeDownloads("Ana Exemplo", {
+          basePath: "/cv",
+          sizes: new Map([
+            ["resume.pdf", 51_800],
+            ["resume.xlsx", 9_200],
+            ["curriculo.pdf", 52_300],
+            ["curriculo.xlsx", 9_300],
+          ]),
+        })}
+      />,
+    );
+
+    expect(html.split(en.resumeDownload.button)).toHaveLength(3);
+    expect(html).toContain(
+      'href="/cv/resume.pdf" download="ana-exemplo-resume.pdf" type="application/pdf" hrefLang="en"',
+    );
+    expect(html).toContain("52 kB");
+    expect(html).toContain('lang="pt-BR"');
+    expect(html).toContain(ptBR.resumeDownload.language);
+    // O idioma da página vem primeiro.
+    expect(html.indexOf(en.resumeDownload.language)).toBeLessThan(
+      html.indexOf(ptBR.resumeDownload.language),
+    );
+  });
+
+  it("não mostra o botão do currículo sem os arquivos", () => {
+    expect(render("pt-BR")).not.toContain(ptBR.resumeDownload.button);
   });
 });

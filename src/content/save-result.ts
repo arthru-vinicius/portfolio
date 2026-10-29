@@ -46,10 +46,14 @@ export type RestoreResult =
  * - `unchanged`: o rascunho é igual ao que está publicado.
  * - `conflict`: o rascunho mudou desde que a página abriu.
  * - `newer-version`: o rascunho foi salvo por uma versão mais nova do painel.
+ * - `resume-failed`: o currículo não foi gerado, e nada foi publicado.
  */
 export type PublishResult =
   | { ok: true; revisionId: number; publishedAt: string }
-  | { ok: false; reason: "conflict" | "newer-version" | "unchanged" }
+  | {
+      ok: false;
+      reason: "conflict" | "newer-version" | "unchanged" | "resume-failed";
+    }
   | { ok: false; reason: "incomplete"; problems: FieldIssue[] };
 
 /**
