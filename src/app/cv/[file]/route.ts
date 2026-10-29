@@ -6,6 +6,7 @@ import {
   downloadFileName,
   parseResumeFileName,
   resumeContentTypes,
+  resumeDisposition,
 } from "@/lib/resume/catalog";
 import { RESUME_FORMAT_VERSION } from "@/lib/resume/version";
 import { readResumeFile, resumeDirectoryFor } from "@/lib/resume/storage";
@@ -25,8 +26,9 @@ function matchesEtag(header: string | null, etag: string): boolean {
 }
 
 /**
- * Entrega o currículo publicado: `/cv/curriculo.pdf`, `/cv/curriculo.docx`,
- * `/cv/resume.pdf` e `/cv/resume.docx`.
+ * Entrega o currículo publicado, em PDF, DOCX, Markdown e JSON Resume:
+ * `/cv/curriculo.pdf`, `/cv/curriculo.md`, `/cv/resume.json` e assim por
+ * diante.
  *
  * A URL não muda a cada publicação. Por isso a resposta sai com
  * `Cache-Control: no-cache` e a ETag da revisão: a Cloudflare e o navegador
@@ -51,6 +53,7 @@ export async function GET(
   if (content === null) {
     return notFound();
   }
+  const { publicOrigin } = getServerEnv();
 
   const etag = `"${content.revisionId}-v${RESUME_FORMAT_VERSION}"`;
   const headers = {
@@ -63,16 +66,14 @@ export async function GET(
 
   const data = await readResumeFile(
     resumeDirectoryFor(databasePath),
-    content,
+    { ...content, origin: publicOrigin },
     file,
   );
-  // O PDF abre no navegador; o DOCX baixa. O link do site tem `download`.
-  const disposition = file.format === "pdf" ? "inline" : "attachment";
   return new Response(new Uint8Array(data), {
     headers: {
       ...headers,
       "Content-Type": resumeContentTypes[file.format],
-      "Content-Disposition": `${disposition}; filename="${downloadFileName(content.document.profile.displayName, file)}"`,
+      "Content-Disposition": `${resumeDisposition(file.format)}; filename="${downloadFileName(content.document.profile.displayName, file)}"`,
       "X-Content-Type-Options": "nosniff",
     },
   });

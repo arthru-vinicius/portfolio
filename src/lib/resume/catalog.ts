@@ -2,17 +2,42 @@ import { slugify } from "@/content/site-view";
 import { locales, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
-/** Os formatos do currículo. */
-export const resumeFormats = ["pdf", "docx"] as const;
+/**
+ * Os formatos do currículo. PDF e DOCX são para quem lê e para o ATS; o
+ * Markdown e o JSON Resume, para assistentes de IA e ferramentas de triagem
+ * que leem texto ou dados sem adivinhar o layout.
+ */
+export const resumeFormats = ["pdf", "docx", "md", "json"] as const;
 
 /** Um formato do currículo. */
 export type ResumeFormat = (typeof resumeFormats)[number];
+
+/** Os formatos que o botão "Baixar currículo" oferece a quem visita. */
+export const downloadFormats = ["pdf", "docx"] as const;
+
+/** Um formato do botão "Baixar currículo". */
+export type DownloadFormat = (typeof downloadFormats)[number];
 
 /** Tipo de cada formato, para o `Content-Type` e o atributo `type` do link. */
 export const resumeContentTypes: Readonly<Record<ResumeFormat, string>> = {
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  md: "text/markdown; charset=utf-8",
+  json: "application/json; charset=utf-8",
 };
+
+/**
+ * Como o arquivo é entregue: o DOCX baixa; o PDF, o Markdown e o JSON abrem
+ * no navegador, onde uma pessoa ou um agente lê sem salvar.
+ *
+ * @param format - O formato.
+ * @returns O tipo do `Content-Disposition`.
+ */
+export function resumeDisposition(
+  format: ResumeFormat,
+): "inline" | "attachment" {
+  return format === "docx" ? "attachment" : "inline";
+}
 
 /**
  * O nome do arquivo de cada idioma na URL, como `/cv/curriculo.pdf` e
@@ -32,17 +57,24 @@ export type ResumeFile = {
   name: string;
 };
 
-/** Os quatro arquivos: dois idiomas em dois formatos. */
+/** Os oito arquivos: dois idiomas em quatro formatos. */
 export const resumeFiles: readonly ResumeFile[] = locales.flatMap((locale) =>
-  resumeFormats.map((format) => ({
-    locale,
-    format,
-    name: `${resumeFileStems[locale]}.${format}`,
-  })),
+  resumeFormats.map((format) => resumeFile(locale, format)),
 );
 
 /**
- * Lê o nome de um arquivo do currículo. Serve também de filtro: só os quatro
+ * O arquivo de um idioma num formato.
+ *
+ * @param locale - O idioma.
+ * @param format - O formato.
+ * @returns O arquivo, como `curriculo.md`.
+ */
+export function resumeFile(locale: Locale, format: ResumeFormat): ResumeFile {
+  return { locale, format, name: `${resumeFileStems[locale]}.${format}` };
+}
+
+/**
+ * Lê o nome de um arquivo do currículo. Serve também de filtro: só os oito
  * nomes passam.
  *
  * @param name - O nome pedido na URL.
@@ -74,8 +106,9 @@ export function downloadFileName(
   return `${parts.join("-")}.${file.format}`;
 }
 
-/** Um arquivo do currículo como o site o oferece. */
+/** Um arquivo do currículo como o botão "Baixar currículo" o oferece. */
 export type ResumeDownload = ResumeFile & {
+  format: DownloadFormat;
   href: string;
   /** O nome sugerido ao salvar, para o atributo `download`. */
   fileName: string;
@@ -83,8 +116,15 @@ export type ResumeDownload = ResumeFile & {
   size: number | null;
 };
 
+const isDownload = (
+  file: ResumeFile,
+): file is ResumeFile & { format: DownloadFormat } =>
+  (downloadFormats as readonly ResumeFormat[]).includes(file.format);
+
 /**
- * Os links dos quatro arquivos do currículo.
+ * Os links do botão "Baixar currículo": PDF e DOCX nos dois idiomas. O
+ * Markdown e o JSON ficam fora do botão; quem os acha é o `/llms.txt` e o
+ * `<link rel="alternate">` da página.
  *
  * @param displayName - O nome curto do perfil, para o nome do arquivo salvo.
  * @param options.basePath - Onde os arquivos ficam: `/cv` no site,
@@ -108,7 +148,7 @@ export function resumeDownloads(
 ): ResumeDownload[] {
   const query =
     options.revisionId === undefined ? "" : `?v=${options.revisionId}`;
-  return resumeFiles.map((file) => ({
+  return resumeFiles.filter(isDownload).map((file) => ({
     ...file,
     href: `${options.basePath}/${file.name}${query}`,
     fileName: downloadFileName(displayName, file, options.suffix),

@@ -363,7 +363,7 @@ export const adminMessages = {
     title: "Currículo",
     heading: "Currículo",
     intro:
-      "O currículo em PDF e DOCX sai do mesmo conteúdo do site. O que entra nele é marcado em cada item, em “No currículo”.",
+      "O currículo sai do mesmo conteúdo do site, em PDF e DOCX para quem lê, e em Markdown e JSON Resume para assistentes de IA e sistemas de triagem. O que entra nele é marcado em cada item, em “No currículo”.",
     downloadsHeading: "Baixar o rascunho",
     downloadsIntro:
       "Gerados agora, a partir do rascunho salvo, para conferir antes de publicar. O site passa a oferecer os arquivos novos quando você publica.",
@@ -378,5 +378,12 @@ export const adminMessages = {
     /** Acrescentado ao nome do arquivo, como `ana-curriculo-rascunho.pdf`. */
     draftSuffix: "rascunho",
     fullSuffix: "completo",
+    /** O nome de cada formato, nos botões dos arquivos do rascunho. */
+    formats: {
+      pdf: "PDF",
+      docx: "DOCX",
+      md: "Markdown",
+      json: "JSON Resume",
+    },
   },
 } as const;

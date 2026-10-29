@@ -91,7 +91,9 @@ export async function publishDraft(input: {
     // O currículo sai antes da revisão: se o gerador falhar, nada é publicado.
     let resume: Map<string, Buffer>;
     try {
-      resume = await renderPublicResumeFiles(toPublicDocument(document));
+      resume = await renderPublicResumeFiles(toPublicDocument(document), {
+        origin: getServerEnv().publicOrigin,
+      });
     } catch (error) {
       console.error("[admin] o currículo não foi gerado", error);
       return { ok: false, reason: "resume-failed" };

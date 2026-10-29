@@ -246,14 +246,18 @@ describe("DOCX do currículo", () => {
 });
 
 describe("renderPublicResumeFiles", () => {
-  it("gera os quatro arquivos", async () => {
+  it("gera os oito arquivos", async () => {
     const files = await renderPublicResumeFiles(publicFixture());
 
     expect([...files.keys()]).toEqual([
       "curriculo.pdf",
       "curriculo.docx",
+      "curriculo.md",
+      "curriculo.json",
       "resume.pdf",
       "resume.docx",
+      "resume.md",
+      "resume.json",
     ]);
   });
 });

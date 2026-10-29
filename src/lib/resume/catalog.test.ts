@@ -3,11 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   downloadFileName,
   parseResumeFileName,
+  resumeDisposition,
   resumeDownloads,
 } from "./catalog";
 
 describe("resumeDownloads", () => {
-  it("põe a revisão no link, para o navegador baixar a versão nova", () => {
+  it("oferece só PDF e DOCX, com a revisão no link", () => {
     const links = resumeDownloads("Ana Exemplo", {
       basePath: "/cv",
       revisionId: 9,
@@ -37,11 +38,28 @@ describe("resumeDownloads", () => {
   });
 });
 
+describe("resumeDisposition", () => {
+  it("baixa só o DOCX; o resto abre no navegador", () => {
+    expect(resumeDisposition("docx")).toBe("attachment");
+    expect(resumeDisposition("pdf")).toBe("inline");
+    expect(resumeDisposition("md")).toBe("inline");
+    expect(resumeDisposition("json")).toBe("inline");
+  });
+});
+
 describe("parseResumeFileName", () => {
-  it("só aceita os quatro nomes", () => {
+  it("só aceita os oito nomes", () => {
     expect(parseResumeFileName("resume.pdf")).toMatchObject({
       locale: "en",
       format: "pdf",
+    });
+    expect(parseResumeFileName("curriculo.md")).toMatchObject({
+      locale: "pt-BR",
+      format: "md",
+    });
+    expect(parseResumeFileName("resume.json")).toMatchObject({
+      locale: "en",
+      format: "json",
     });
     expect(parseResumeFileName("curriculo.xlsx")).toBeNull();
     expect(parseResumeFileName("../curriculo.pdf")).toBeNull();

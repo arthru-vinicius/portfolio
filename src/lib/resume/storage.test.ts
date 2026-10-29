@@ -8,23 +8,40 @@ import { toPublicDocument } from "@/content/public-projection";
 
 import { portfolioFixture } from "../../../tests/fixtures/portfolio-document";
 
-import { parseResumeFileName } from "./catalog";
+import { parseResumeFileName, resumeFiles } from "./catalog";
+import { RESUME_FORMAT_VERSION } from "./version";
 
 const render = vi.hoisted(() => ({
   calls: 0,
+  origins: [] as unknown[],
 }));
 
-vi.mock("./render", () => ({
-  renderPublicResumeFiles: async () => {
-    render.calls++;
-    return new Map([
-      ["curriculo.pdf", Buffer.from("pdf pt")],
-      ["curriculo.docx", Buffer.from("docx pt")],
-      ["resume.pdf", Buffer.from("pdf en!")],
-      ["resume.docx", Buffer.from("docx en")],
-    ]);
-  },
-}));
+/** O conteúdo falso de cada arquivo: o formato e o idioma. */
+const fakeContent = (file: { format: string; locale: string }) =>
+  `${file.format} ${file.locale}`;
+
+vi.mock("./render", async () => {
+  const catalog = await import("./catalog");
+  return {
+    renderPublicResumeFiles: async (
+      _document: unknown,
+      options?: { origin?: string | null },
+    ) => {
+      render.calls++;
+      render.origins.push(options?.origin);
+      return new Map(
+        catalog.resumeFiles.map((file) => [
+          file.name,
+          Buffer.from(fakeContent(file)),
+        ]),
+      );
+    },
+  };
+});
+
+/** A pasta de uma revisão na versão atual do formato. */
+const folderOf = (revisionId: number) =>
+  `${revisionId}-v${RESUME_FORMAT_VERSION}`;
 
 const {
   ensureResumeFiles,
@@ -44,6 +61,7 @@ function fileNamed(name: string) {
 const source = (revisionId: number) => ({
   revisionId,
   document: toPublicDocument(structuredClone(portfolioFixture)),
+  origin: "https://portfolio.example.com",
 });
 
 let root = "";
@@ -51,6 +69,7 @@ let root = "";
 beforeEach(async () => {
   vi.spyOn(console, "info").mockImplementation(() => {});
   render.calls = 0;
+  render.origins = [];
   root = path.join(await mkdtemp(path.join(tmpdir(), "cv-")), "cv");
 });
 
@@ -70,18 +89,16 @@ describe("ensureResumeFiles", () => {
   it("gera os arquivos que faltam e devolve os tamanhos", async () => {
     const sizes = await ensureResumeFiles(root, source(3));
 
-    expect(Object.fromEntries(sizes)).toEqual({
-      "curriculo.pdf": 6,
-      "curriculo.docx": 7,
-      "resume.pdf": 7,
-      "resume.docx": 7,
-    });
-    expect((await readdir(path.join(root, "3-v1"))).sort()).toEqual([
-      "curriculo.docx",
-      "curriculo.pdf",
-      "resume.docx",
-      "resume.pdf",
-    ]);
+    expect(Object.fromEntries(sizes)).toEqual(
+      Object.fromEntries(
+        resumeFiles.map((file) => [file.name, fakeContent(file).length]),
+      ),
+    );
+    expect((await readdir(path.join(root, folderOf(3)))).sort()).toEqual(
+      resumeFiles.map((file) => file.name).sort(),
+    );
+    // A origem chega ao gerador, para os links do Markdown e do JSON.
+    expect(render.origins).toEqual(["https://portfolio.example.com"]);
   });
 
   it("não gera de novo o que já existe", async () => {
@@ -104,10 +121,11 @@ describe("ensureResumeFiles", () => {
 
 describe("saveResumeFiles", () => {
   it("apaga as pastas antigas e mantém a de uma revisão mais nova", async () => {
-    for (const folder of ["1-v1", "2-v0", "2-v1", "9-v1", "lixo"]) {
+    const olderFormat = `2-v${RESUME_FORMAT_VERSION - 1}`;
+    for (const folder of [folderOf(1), olderFormat, folderOf(9), "lixo"]) {
       await mkdir(path.join(root, folder), { recursive: true });
     }
-    await writeFile(path.join(root, "1-v1", "curriculo.pdf"), "velho");
+    await writeFile(path.join(root, folderOf(1), "curriculo.pdf"), "velho");
 
     await saveResumeFiles(
       root,
@@ -115,7 +133,7 @@ describe("saveResumeFiles", () => {
       new Map([["curriculo.pdf", Buffer.from("novo")]]),
     );
 
-    expect((await readdir(root)).sort()).toEqual(["2-v1", "9-v1"]);
+    expect((await readdir(root)).sort()).toEqual([folderOf(2), folderOf(9)]);
   });
 });
 
@@ -127,6 +145,6 @@ describe("readResumeFile", () => {
       fileNamed("curriculo.docx"),
     );
 
-    expect(data.toString()).toBe("docx pt");
+    expect(data.toString()).toBe("docx pt-BR");
   });
 });

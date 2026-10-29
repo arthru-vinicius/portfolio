@@ -1,11 +1,12 @@
 # portfolio
 
 Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.arthru.com**:
-site em português e inglês, um painel para editar o conteúdo e o currículo em PDF e DOCX gerado
-a partir dele.
+site em português e inglês, um painel para editar o conteúdo e o currículo gerado a partir dele,
+em PDF e DOCX para quem lê e em Markdown e JSON Resume para assistentes de IA.
 
-> Em construção. O site, o painel e o currículo já funcionam; faltam o acabamento, a otimização
-> para buscadores e o lançamento.
+> Em construção. O site, o painel, o currículo e a otimização para buscadores e assistentes de IA
+> já funcionam; faltam o acabamento (cabeçalhos de segurança, Web Analytics e auditoria) e o
+> lançamento.
 
 ## Arquitetura
 
@@ -97,21 +98,28 @@ Tudo sai do conteúdo publicado e do `PUBLIC_ORIGIN`; nenhum domínio fica no c�
 - **`robots.txt`:** a mesma regra do `X-Robots-Tag`. No host canônico e com `ALLOW_INDEXING`,
   todos os robôs entram (os de busca e os de IA), menos no painel, e o sitemap é indicado;
   antes disso, ou em outro host, nenhum entra.
+- **Para assistentes de IA:** o `/llms.txt` (convenção do `llmstxt.org`) traz o nome, o título
+  numa linha, o resumo profissional e os links do currículo em Markdown e em JSON Resume nos dois
+  idiomas, das páginas, dos perfis e do contato; o PDF e o DOCX ficam na seção `Optional`. Os
+  títulos saem em inglês, e cada arquivo leva o nome no idioma dele. A página de cada idioma
+  também aponta o currículo em texto e em dados com `<link rel="alternate">` (`text/markdown` e
+  `application/json`).
 
 ## Currículo
 
-O currículo sai do mesmo conteúdo do site, em PDF e DOCX, em português e inglês, num formato
-pensado para recrutadores e sistemas de triagem (ATS).
+O currículo sai do mesmo conteúdo do site, em português e inglês: em PDF e DOCX, num formato
+pensado para recrutadores e sistemas de triagem (ATS), e em Markdown e JSON Resume, para
+assistentes de IA e ferramentas que leem texto ou dados sem adivinhar o layout.
 
 - **O que entra:** o que está marcado "No currículo" em cada item (mesmo oculto no site), os
   destaques marcados e o resumo profissional da tela Currículo. As seções seguem a ordem do
   mercado, e não a do site: resumo, experiência, habilidades, projetos, formação, prêmios e
   idiomas. Experiências, cursos e prêmios vêm do mais recente para o mais antigo, e os meses saem
   como `MM/AAAA`.
-- **Um modelo, dois arquivos:** `buildResumeModel` monta o currículo de um idioma em texto puro
-  (o Markdown vira texto, e os links ficam com o endereço escrito), e `layoutResume` o dispõe em
-  seções e linhas. Os dois geradores só desenham esse layout, então o PDF e o DOCX têm o mesmo
-  texto, na mesma ordem.
+- **Um modelo, quatro formatos:** `buildResumeModel` monta o currículo de um idioma em texto puro
+  (o Markdown do painel vira texto, e os links ficam com o endereço escrito), e `layoutResume` o
+  dispõe em seções e linhas. O PDF, o DOCX e o Markdown só desenham esse layout, então têm o mesmo
+  texto, na mesma ordem; o JSON Resume sai do mesmo modelo.
 - **PDF** (pdfkit): A4, uma coluna, sem tabela, imagem, cabeçalho ou rodapé de página. Texto real,
   com a Inter embutida (licença OFL, do Fontsource) e os acentos certos ao copiar. Sai marcado
   (tagged), com o idioma, título, autor, assunto e palavras-chave. Um caractere que a fonte não
@@ -120,17 +128,26 @@ pensado para recrutadores e sistemas de triagem (ATS).
   vaga aceite. Uma coluna, sem tabela nem caixa de texto, com os estilos do próprio Word (o nome
   em Título 1, as seções em Título 2, listas com marcador de verdade), Calibri, o idioma do texto
   e as propriedades do documento.
+- **Markdown:** o texto do PDF, sem o layout: o nome como `#`, as seções como `##`, cada item
+  como `###`, listas e links de verdade, com o texto escapado para nada virar marcação por
+  acidente. Leva também o link do portfólio no idioma.
+- **JSON Resume** (`jsonresume.org`, v1.0.0): os mesmos dados em campos padrão (`basics`, `work`,
+  `education`, `skills`, `projects`, `awards`, `languages`), com as datas em `AAAA-MM`, as
+  tecnologias em `keywords` e a conclusão prevista de um curso em andamento como `endDate`. Sem
+  campo vazio, e com o endereço do portfólio e do próprio arquivo.
 - **Quando é gerado:** ao publicar, antes de gravar a revisão; se o gerador falhar, nada é
-  publicado. Os quatro arquivos vão para `/data/cv/<revisão>-v<formato>/`, e os da revisão
+  publicado. Os oito arquivos vão para `/data/cv/<revisão>-v<formato>/`, e os da revisão
   anterior são apagados. Se faltarem (uma revisão de antes do currículo, uma versão nova do
   formato), a rota os gera no primeiro pedido.
-- **Endereços fixos:** `/cv/curriculo.pdf`, `/cv/curriculo.docx`, `/cv/resume.pdf` e
-  `/cv/resume.docx`. A resposta sai com `Cache-Control: no-cache` e a ETag da revisão, e a
+- **Endereços fixos:** `/cv/curriculo.pdf`, `.docx`, `.md` e `.json`, e o mesmo com `resume`
+  em inglês. O DOCX baixa; os outros abrem no navegador. A resposta sai com
+  `Cache-Control: no-cache` e a ETag da revisão, e a
   Cloudflare confere com o servidor antes de usar a cópia dela. Os links do site levam
   `?v=<revisão>`: o navegador guarda o arquivo por endereço, e o endereço muda a cada
   publicação.
-- **No site:** o botão "Baixar currículo", no topo e no rodapé, abre a lista dos arquivos nos dois
-  idiomas, com o tamanho de cada um.
+- **No site:** o botão "Baixar currículo", no topo e no rodapé, abre a lista do PDF e do DOCX nos
+  dois idiomas, com o tamanho de cada um. O Markdown e o JSON ficam fora do botão; quem os acha é
+  o `/llms.txt` e o `<link rel="alternate">` da página.
 - **Telefone:** nunca vai para os arquivos públicos. A versão completa, com o telefone do campo
   privado, sai só no painel.
 

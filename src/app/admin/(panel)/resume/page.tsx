@@ -38,7 +38,7 @@ function DraftFiles({
               href={`/admin/cv/${file.name}${full ? "?full=1" : ""}`}
               className={secondaryButtonClass}
             >
-              {file.format.toUpperCase()}
+              {messages.formats[file.format]}
             </a>
           </li>
         ))}

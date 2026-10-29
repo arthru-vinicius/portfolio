@@ -4,10 +4,12 @@ import type { NextRequest } from "next/server";
 import { toPublicDocument } from "@/content/public-projection";
 import { adminMessages } from "@/i18n/admin";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { getServerEnv } from "@/lib/env";
 import {
   downloadFileName,
   parseResumeFileName,
   resumeContentTypes,
+  resumeDisposition,
 } from "@/lib/resume/catalog";
 import { renderResumeFile } from "@/lib/resume/render";
 
@@ -44,17 +46,18 @@ export async function GET(
     notFound();
   }
 
+  const { publicOrigin } = getServerEnv();
   const data = await renderResumeFile(
     toPublicDocument(draft.document),
     file,
-    full ? { phone } : {},
+    full ? { phone, origin: publicOrigin } : { origin: publicOrigin },
   );
   const name = downloadFileName(
     draft.document.profile.displayName,
     file,
     full ? messages.fullSuffix : messages.draftSuffix,
   );
-  const disposition = file.format === "pdf" ? "inline" : "attachment";
+  const disposition = resumeDisposition(file.format);
   console.info(
     `[admin] currículo do rascunho gerado: ${file.name}${full ? " (completo)" : ""}`,
   );

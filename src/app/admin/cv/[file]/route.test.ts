@@ -43,7 +43,10 @@ vi.mock("next/server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/server")>()),
   connection: async () => {},
 }));
-vi.mock("@/lib/env", () => ({ getAdminEnv: () => state.admin }));
+vi.mock("@/lib/env", () => ({
+  getAdminEnv: () => state.admin,
+  getServerEnv: () => ({ publicOrigin: "https://portfolio.example.com" }),
+}));
 vi.mock("@/lib/db/database", () => ({ getDatabase: () => state.db }));
 
 const { GET } = await import("./route");

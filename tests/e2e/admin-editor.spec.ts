@@ -361,6 +361,36 @@ test("a página publicada se apresenta aos buscadores e às redes", async ({
   expect(robots).toMatch(/Sitemap: .*\/sitemap\.xml/);
 });
 
+test("assistentes de IA acham o currículo em texto e em dados", async ({
+  page,
+}) => {
+  await page.goto("/pt/");
+  const markdownHref = await page
+    .locator('head link[rel="alternate"][type="text/markdown"]')
+    .getAttribute("href");
+  expect(markdownHref).toMatch(/\/cv\/curriculo\.md$/);
+
+  const markdown = await page.request.get(markdownHref ?? "");
+  expect(markdown.headers()["content-type"]).toBe(
+    "text/markdown; charset=utf-8",
+  );
+  expect(await markdown.text()).toContain(
+    `## ${ptBR.resume.sections.experience}`,
+  );
+
+  const json = await page.request.get("/cv/resume.json");
+  expect(await json.json()).toMatchObject({
+    basics: { label: "Full Stack Developer" },
+    meta: { language: "en" },
+  });
+
+  const llms = await page.request.get("/llms.txt");
+  expect(llms.status()).toBe(200);
+  const text = await llms.text();
+  expect(text).toMatch(/^# /);
+  expect(text).toMatch(/\]\(http[^)]*\/cv\/resume\.md\)/);
+});
+
 test("o site oferece o currículo da publicação, em PDF e DOCX", async ({
   page,
 }) => {
