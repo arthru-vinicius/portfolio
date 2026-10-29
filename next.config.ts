@@ -14,6 +14,12 @@ const nextConfig: NextConfig = {
   // pode ser redirecionado. Então o Next não redireciona nada, e o proxy
   // acrescenta a barra só nas páginas dos idiomas.
   skipTrailingSlashRedirect: true,
+  // Os metadados (canônica, `hreflang`, cartão) vão sempre no `<head>`. Por
+  // padrão, numa página dinâmica, o Next os manda depois, no fim do `<body>`,
+  // menos para uma lista de robôs; os de IA (GPTBot, ClaudeBot) não estão
+  // nela, e canônica fora do `<head>` não vale. Os metadados saem do cache do
+  // conteúdo, então esperar por eles custa quase nada.
+  htmlLimitedBots: /.*/,
   // Os geradores do currículo rodam com o `require` do Node, fora do bundle:
   // o pdfkit lê arquivos de dados ao lado do próprio código.
   serverExternalPackages: ["pdfkit", "docx"],

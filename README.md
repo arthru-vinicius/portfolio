@@ -80,7 +80,9 @@ recusa a conexão de recarregamento automático vinda de outra origem.
 Tudo sai do conteúdo publicado e do `PUBLIC_ORIGIN`; nenhum domínio fica no código.
 
 - **Metadados por idioma:** título, descrição, canônica (`/pt/` e `/en/`) e `hreflang` dos dois
-  idiomas, com a raiz como `x-default`.
+  idiomas, com a raiz como `x-default`. Vão sempre no `<head>` (`htmlLimitedBots: /.*/`): por
+  padrão, numa página dinâmica, o Next os manda no fim do `<body>`, menos para uma lista de robôs
+  da qual os de IA não fazem parte.
 - **Cartão de compartilhamento:** `/pt/og.jpg` e `/en/og.jpg` (Open Graph e Twitter), no visual
   do site, com o nome, o título e a foto. É desenhado com o `next/og`, guardado em cache até a
   próxima publicação e sai em JPEG para ficar leve. Os metadados apontam para ele com
