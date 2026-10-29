@@ -334,7 +334,12 @@ test("a página publicada se apresenta aos buscadores e às redes", async ({
   );
   expect(jsonLd).toMatchObject({
     "@type": "ProfilePage",
-    mainEntity: { "@type": "Person", name: "Ana Exemplo da Silva" },
+    // O nome completo muda nos testes anteriores; o cargo, não.
+    mainEntity: {
+      "@type": "Person",
+      name: expect.any(String),
+      jobTitle: "Desenvolvedora Full Stack",
+    },
   });
   // O CV no site leva a revisão no link, para o navegador baixar o novo.
   await expect(
