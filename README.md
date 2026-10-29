@@ -66,12 +66,14 @@ recusa a conexão de recarregamento automático vinda de outra origem.
   origem). O servidor gira a imagem pela orientação da câmera, descarta os metadados (EXIF, GPS),
   reduz para 480 e 960 px e grava em WebP em `/data/media`, com o resumo SHA-256 do conteúdo no
   nome. Por isso o arquivo nunca muda: `/media/<id>-<largura>.webp` sai com cache de um ano, e
-  trocar de foto passa pelo rascunho e pela publicação, como o resto do conteúdo.
+  trocar de foto passa pelo rascunho e pela publicação, como o resto do conteúdo. O `sizes` da
+  foto segue a largura dela em cada faixa de tela, e o celular comum baixa a de 480 px.
 - **Contato:** formulário com nome, e-mail e mensagem. A Server Action pública confere o limite
   por IP (5 por hora), os campos, um campo-armadilha e o Turnstile, nessa ordem, e entrega a
   mensagem em texto puro ao relay de e-mail, que manda para o dono do site. Fora de produção, ou
   com `MAIL_RELAY_DRY_RUN=true`, o envio só vai para o log; em produção sem o relay, o
-  formulário some e fica o e-mail.
+  formulário some e fica o e-mail. O Turnstile do formulário só carrega quando ele chega perto
+  da tela: o widget baixa centenas de KB, e quem não rola até o contato não paga por eles.
 - **Ícones:** `icon.svg`, `favicon.ico` e `apple-icon.png` em `src/app`, pela convenção de
   arquivos do Next.
 

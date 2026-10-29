@@ -40,7 +40,16 @@ export type TurnstileWidgetProps = {
   name?: string;
   /** Idioma do widget, no formato da Cloudflare (`pt-br`, `en`). */
   language?: string;
+  /**
+   * Só carrega o script quando o widget chega perto da tela. Serve para um
+   * formulário no fim da página: o Turnstile baixa centenas de KB, e quem não
+   * rola até lá não paga por eles.
+   */
+  deferred?: boolean;
 };
+
+/** Distância da tela em que o widget adiado começa a carregar. */
+const DEFERRED_MARGIN = "600px 0px";
 
 /**
  * Widget do Cloudflare Turnstile, que põe o token num campo escondido do
@@ -54,10 +63,30 @@ export function TurnstileWidget({
   action,
   name = "turnstileToken",
   language = "pt-br",
+  deferred = false,
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(!deferred);
   const [scriptReady, setScriptReady] = useState(false);
   const [token, setToken] = useState("");
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (near || container === null) {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setNear(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: DEFERRED_MARGIN },
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [near]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -88,11 +117,13 @@ export function TurnstileWidget({
     <>
       {/* O onReady roda quando o script termina de carregar e de novo a cada
           montagem, então um widget montado outra vez se desenha sozinho. */}
-      <Script
-        src={SCRIPT_URL}
-        strategy="afterInteractive"
-        onReady={() => setScriptReady(true)}
-      />
+      {near && (
+        <Script
+          src={SCRIPT_URL}
+          strategy="afterInteractive"
+          onReady={() => setScriptReady(true)}
+        />
+      )}
       <div ref={containerRef} className="min-h-[65px]" />
       <input type="hidden" name={name} value={token} />
     </>

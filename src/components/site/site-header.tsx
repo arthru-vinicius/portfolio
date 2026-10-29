@@ -63,12 +63,14 @@ export function SiteHeader({
           href={localeHomePath(other)}
           hrefLang={other}
           lang={other}
-          aria-label={dict.language.switchTo}
           title={dict.language.switchTo}
           className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold hover:bg-card-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <GlobeIcon className="text-base" />
+          {/* O nome acessível começa pelo texto visível ("EN"), para quem
+              comanda o leitor de tela pela voz dizer o que vê. */}
           {dict.language.short}
+          <span className="sr-only"> {dict.language.switchTo}</span>
         </a>
         <a
           href={contactHref}

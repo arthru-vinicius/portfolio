@@ -302,7 +302,13 @@ test("o site mostra a publicação, com tema e idioma", async ({ page }) => {
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
-  await page.getByRole("link", { name: ptBR.language.switchTo }).click();
+  // O nome acessível começa pelo texto visível do botão.
+  await page
+    .getByRole("link", {
+      name: `${ptBR.language.short} ${ptBR.language.switchTo}`,
+      exact: true,
+    })
+    .click();
   await expect(page).toHaveURL(/\/en\/$/);
   await expect(title).toContainText("Full Stack Developer");
 });
@@ -351,6 +357,26 @@ test("o site oferece o currículo da publicação, em PDF e DOCX", async ({
   expect(full.headers()["content-disposition"]).toMatch(
     /-curriculo-completo\.pdf"$/,
   );
+});
+
+test("só carrega o Turnstile quando o contato se aproxima", async ({
+  page,
+}) => {
+  const turnstile: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().startsWith("https://challenges.cloudflare.com/")) {
+      turnstile.push(request.url());
+    }
+  });
+  await page.goto("/pt/");
+  await page.waitForLoadState("networkidle");
+  expect(turnstile).toEqual([]);
+
+  await page.locator("#contato").scrollIntoViewIfNeeded();
+  await expect(page.locator('input[name="turnstileToken"]')).not.toHaveValue(
+    "",
+  );
+  expect(turnstile.length).toBeGreaterThan(0);
 });
 
 test("envia uma mensagem pelo formulário de contato", async ({ page }) => {
