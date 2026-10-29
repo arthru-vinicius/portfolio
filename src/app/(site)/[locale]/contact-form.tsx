@@ -146,6 +146,7 @@ export function ContactForm({
           siteKey={siteKey}
           action={CONTACT_TURNSTILE_ACTION}
           language={locale === "en" ? "en" : "pt-br"}
+          deferred
         />
       </div>
       <div className="flex flex-wrap items-center gap-4">

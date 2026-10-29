@@ -63,12 +63,14 @@ export function Hero({
       >
         {photo !== undefined && (
           <div className="site-photo relative w-full max-w-[15rem] sm:max-w-[18rem] lg:order-last lg:max-w-none">
-            {/* Os tamanhos já saem prontos do envio (WebP, 480 e 960 px). */}
+            {/* Os tamanhos já saem prontos do envio (WebP, 480 e 960 px). O
+                `sizes` segue a largura máxima da foto em cada faixa de tela,
+                para o celular comum baixar a de 480. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`/media/${photo.id}-960.webp`}
               srcSet={`/media/${photo.id}-480.webp 480w, /media/${photo.id}-960.webp 960w`}
-              sizes="(min-width: 1024px) 22rem, 18rem"
+              sizes="(min-width: 1024px) 22rem, (min-width: 640px) 18rem, 15rem"
               width={photo.width}
               height={photo.height}
               alt={fillTemplate(dict.site.photoAlt, { name })}
