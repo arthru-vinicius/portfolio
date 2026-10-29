@@ -9,6 +9,7 @@ import {
 } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { fillTemplate } from "@/i18n/template";
+import { resumeFile } from "@/lib/resume/catalog";
 
 /** Medidas da imagem de compartilhamento: o tamanho que as redes recomendam. */
 export const SHARE_IMAGE_SIZE = { width: 1200, height: 630 } as const;
@@ -90,6 +91,12 @@ export function publishedPageMetadata(
           alternates: {
             canonical: localeHomePath(locale),
             languages: localeAlternates(options.origin),
+            // O currículo do idioma em texto e em dados: um agente que chega
+            // pela página acha a versão sem layout.
+            types: {
+              "text/markdown": `/cv/${resumeFile(locale, "md").name}`,
+              "application/json": `/cv/${resumeFile(locale, "json").name}`,
+            },
           },
         };
 

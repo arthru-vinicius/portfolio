@@ -33,6 +33,7 @@ vi.mock("@/content/read-published", () => ({
 const { default: robots } = await import("./robots");
 const { default: sitemap } = await import("./sitemap");
 const { GET: shareImage } = await import("./(site)/[locale]/og.jpg/route");
+const { GET: llms } = await import("./llms.txt/route");
 
 beforeEach(() => {
   state.host = "portfolio.example.com";
@@ -94,6 +95,39 @@ describe("sitemap.xml", () => {
     state.content = null;
 
     expect(await sitemap()).toEqual([]);
+  });
+});
+
+describe("GET /llms.txt", () => {
+  const get = (url = "https://portfolio.example.com/llms.txt") =>
+    llms(new NextRequest(url));
+
+  it("entrega o resumo para assistentes de IA, com links absolutos", async () => {
+    const response = await get();
+    const text = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe(
+      "text/plain; charset=utf-8",
+    );
+    expect(text.startsWith("# Ana Exemplo da Silva\n")).toBe(true);
+    expect(text).toContain("(https://portfolio.example.com/cv/resume.md)");
+  });
+
+  it("sem PUBLIC_ORIGIN, usa a origem do pedido", async () => {
+    state.server.publicOrigin = null;
+
+    const text = await (
+      await get("http://portfolio.local:3000/llms.txt")
+    ).text();
+
+    expect(text).toContain("(http://portfolio.local:3000/cv/resume.md)");
+  });
+
+  it("responde 404 sem nada publicado", async () => {
+    state.content = null;
+
+    expect((await get()).status).toBe(404);
   });
 });
 

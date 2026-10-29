@@ -137,6 +137,8 @@ export const ptBR = {
     technologies: "Tecnologias",
     code: "Código",
     website: "Site",
+    /** O link do próprio portfólio, no Markdown e no JSON do currículo. */
+    portfolio: "Portfólio",
   },
   /** O botão "Baixar currículo", no topo e no rodapé do site. */
   resumeDownload: {
@@ -145,6 +147,26 @@ export const ptBR = {
     language: "Em português",
     pdf: "PDF",
     docx: "Word (DOCX)",
+  },
+  /**
+   * O `/llms.txt`, o resumo do site para assistentes de IA. Ele sai com os
+   * títulos em inglês, e cada arquivo leva o nome escrito no idioma dele.
+   */
+  llms: {
+    intro: "{headline} em {location}.",
+    resumeHeading: "Currículo",
+    pagesHeading: "Portfólio",
+    profilesHeading: "Perfis",
+    contactHeading: "Contato",
+    email: "E-mail",
+    contactSection: "Seção de contato do portfólio",
+    home: "Portfólio em português",
+    md: "Currículo em Markdown, em português",
+    mdNote: "o mesmo texto do PDF, sem o layout",
+    json: "Currículo em JSON Resume, em português",
+    jsonNote: "dados no padrão do jsonresume.org",
+    pdf: "Currículo em PDF, em português",
+    docx: "Currículo em Word (DOCX), em português",
   },
   theme: {
     system: "Tema do sistema",

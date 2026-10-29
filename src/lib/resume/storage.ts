@@ -16,8 +16,15 @@ import type { PublicDocument } from "@/content/public-projection";
 import { resumeFiles, type ResumeFile } from "./catalog";
 import { RESUME_FORMAT_VERSION } from "./version";
 
-/** A revisão publicada de onde saem os arquivos. */
-export type ResumeSource = { revisionId: number; document: PublicDocument };
+/**
+ * A revisão publicada de onde saem os arquivos, e a origem canônica para os
+ * links do Markdown e do JSON.
+ */
+export type ResumeSource = {
+  revisionId: number;
+  document: PublicDocument;
+  origin?: string | null;
+};
 
 /** Tamanho de cada arquivo público, em bytes, pelo nome. */
 export type ResumeFileSizes = ReadonlyMap<string, number>;
@@ -107,7 +114,7 @@ async function readSizes(folder: string): Promise<ResumeFileSizes | null> {
 const pending = new Map<string, Promise<ResumeFileSizes>>();
 
 /**
- * Garante que os quatro arquivos públicos da revisão existem e devolve o
+ * Garante que os oito arquivos públicos da revisão existem e devolve o
  * tamanho de cada um. Normalmente eles já foram gravados na publicação; faltam
  * na revisão publicada antes do currículo existir, depois de uma mudança do
  * formato ou se a gravação falhou, e então são gerados aqui.
@@ -133,7 +140,9 @@ export async function ensureResumeFiles(
     // Os geradores só carregam quando há o que gerar: a página do site lê
     // os tamanhos a cada visita e não precisa do pdfkit para isso.
     const { renderPublicResumeFiles } = await import("./render");
-    const files = await renderPublicResumeFiles(source.document);
+    const files = await renderPublicResumeFiles(source.document, {
+      origin: source.origin,
+    });
     await saveResumeFiles(root, source.revisionId, files);
     console.info(`[cv] arquivos da revisão ${source.revisionId} gerados`);
     return new Map(

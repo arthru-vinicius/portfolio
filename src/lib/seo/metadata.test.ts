@@ -50,6 +50,10 @@ describe("publishedPageMetadata", () => {
       alternates: {
         canonical: "/pt/",
         languages: localeAlternates(ORIGIN),
+        types: {
+          "text/markdown": "/cv/curriculo.md",
+          "application/json": "/cv/curriculo.json",
+        },
       },
       openGraph: {
         type: "profile",

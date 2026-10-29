@@ -11,6 +11,7 @@ import { SESSION_COOKIE_NAME, createSessionToken } from "@/lib/auth/session";
 import { saveDraft } from "@/lib/db/draft";
 import { insertRevision, listRevisions } from "@/lib/db/revisions";
 import type { AdminEnv } from "@/lib/env";
+import { RESUME_FORMAT_VERSION } from "@/lib/resume/version";
 
 import { portfolioFixture } from "../../../../tests/fixtures/portfolio-document";
 import {
@@ -53,6 +54,7 @@ vi.mock("@/lib/env", () => ({
   getAdminEnv: () => state.admin,
   getServerEnv: () => ({
     databasePath: path.join(state.directory, "portfolio.db"),
+    publicOrigin: "https://portfolio.example.com",
   }),
 }));
 vi.mock("@/lib/db/database", () => ({ getDatabase: () => state.db }));
@@ -120,11 +122,15 @@ describe("publishDraft", () => {
 
     await publishDraft({ version: versionOf(document), note: "" });
 
-    const [rendered] = vi.mocked(renderPublicResumeFiles).mock.calls[0] ?? [];
+    const [rendered, options] =
+      vi.mocked(renderPublicResumeFiles).mock.calls[0] ?? [];
     expect(rendered?.profile).not.toHaveProperty("private");
-    expect(await readdir(path.join(state.directory, "cv", "1-v1"))).toEqual([
-      "curriculo.pdf",
-    ]);
+    expect(options).toEqual({ origin: "https://portfolio.example.com" });
+    expect(
+      await readdir(
+        path.join(state.directory, "cv", `1-v${RESUME_FORMAT_VERSION}`),
+      ),
+    ).toEqual(["curriculo.pdf"]);
   });
 
   it("não publica nada se o currículo não for gerado", async () => {

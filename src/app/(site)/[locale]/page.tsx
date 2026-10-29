@@ -87,15 +87,15 @@ function Placeholder({ locale }: { locale: Locale }) {
 async function publishedResume(
   content: PublishedContent,
 ): Promise<ResumeDownload[] | undefined> {
-  const { databasePath } = getServerEnv();
+  const { databasePath, publicOrigin } = getServerEnv();
   if (databasePath === null) {
     return undefined;
   }
   try {
-    const sizes = await ensureResumeFiles(
-      resumeDirectoryFor(databasePath),
-      content,
-    );
+    const sizes = await ensureResumeFiles(resumeDirectoryFor(databasePath), {
+      ...content,
+      origin: publicOrigin,
+    });
     return resumeDownloads(content.document.profile.displayName, {
       basePath: "/cv",
       sizes,
