@@ -10,7 +10,12 @@ export const ptBR = {
   metadata: {
     title: "Portfólio em construção",
     description: "Portfólio de desenvolvimento de software, em construção.",
-    siteDescription: "Portfólio de {name}: {headline} em {location}.",
+    siteDescription:
+      "Portfólio de {name}, {headline} em {location}: experiência, projetos e currículo em PDF e DOCX.",
+    /** Texto alternativo da imagem de compartilhamento (Open Graph). */
+    imageAlt: "{name}, {headline}, em {location}",
+    /** O rótulo pequeno no alto da imagem de compartilhamento. */
+    imageLabel: "Portfólio",
   },
   placeholder: {
     title: "Portfólio em construção",

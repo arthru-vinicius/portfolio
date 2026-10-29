@@ -5,7 +5,10 @@ export const en: Dictionary = {
   metadata: {
     title: "Portfolio under construction",
     description: "Software development portfolio, under construction.",
-    siteDescription: "Portfolio of {name}: {headline} in {location}.",
+    siteDescription:
+      "Portfolio of {name}, {headline} based in {location}: experience, projects and résumé in PDF and DOCX.",
+    imageAlt: "{name}, {headline}, based in {location}",
+    imageLabel: "Portfolio",
   },
   placeholder: {
     title: "Portfolio under construction",

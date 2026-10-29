@@ -15,10 +15,11 @@ import {
   type Locale,
 } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
-import { fillTemplate } from "@/i18n/template";
 import { getContactEnv, getServerEnv } from "@/lib/env";
 import { resumeDownloads, type ResumeDownload } from "@/lib/resume/catalog";
 import { ensureResumeFiles, resumeDirectoryFor } from "@/lib/resume/storage";
+import { profilePageJsonLd, serializeJsonLd } from "@/lib/seo/json-ld";
+import { publishedPageMetadata } from "@/lib/seo/metadata";
 
 import { ContactForm } from "./contact-form";
 
@@ -33,8 +34,8 @@ async function localeOf(
 }
 
 /**
- * Título e descrição da página, a partir do perfil publicado. Sem nada
- * publicado, os da página em construção.
+ * Título, descrição, canônica, `hreflang` e cartão de compartilhamento, a
+ * partir do perfil publicado. Sem nada publicado, os da página em construção.
  */
 export async function generateMetadata({
   params,
@@ -49,15 +50,10 @@ export async function generateMetadata({
       description: dict.metadata.description,
     };
   }
-  const { displayName, headline, location } = content.document.profile;
-  return {
-    title: `${displayName} · ${headline[locale]}`,
-    description: fillTemplate(dict.metadata.siteDescription, {
-      name: displayName,
-      headline: headline[locale],
-      location: location[locale],
-    }),
-  };
+  return publishedPageMetadata(content.document, locale, {
+    origin: getServerEnv().publicOrigin,
+    revisionId: content.revisionId,
+  });
 }
 
 function Placeholder({ locale }: { locale: Locale }) {
@@ -103,6 +99,7 @@ async function publishedResume(
     return resumeDownloads(content.document.profile.displayName, {
       basePath: "/cv",
       sizes,
+      revisionId: content.revisionId,
     });
   } catch (error) {
     console.error("[cv] o currículo não ficou disponível", error);
@@ -122,21 +119,36 @@ async function PublishedSite({ locale }: { locale: Locale }) {
   const contact = getContactEnv();
   const resume = await publishedResume(content);
   return (
-    <SitePage
-      document={content.document}
-      locale={locale}
-      contactForm={
-        contact.status === "ready" ? (
-          <ContactForm
-            locale={locale}
-            labels={getDictionary(locale).contactForm}
-            siteKey={contact.turnstile.siteKey}
-          />
-        ) : undefined
-      }
-      ownHost={publicOrigin === null ? null : new URL(publicOrigin).hostname}
-      resume={resume}
-    />
+    <>
+      {publicOrigin !== null && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: serializeJsonLd(
+              profilePageJsonLd(content.document, locale, {
+                origin: publicOrigin,
+                publishedAt: content.publishedAt,
+              }),
+            ),
+          }}
+        />
+      )}
+      <SitePage
+        document={content.document}
+        locale={locale}
+        contactForm={
+          contact.status === "ready" ? (
+            <ContactForm
+              locale={locale}
+              labels={getDictionary(locale).contactForm}
+              siteKey={contact.turnstile.siteKey}
+            />
+          ) : undefined
+        }
+        ownHost={publicOrigin === null ? null : new URL(publicOrigin).hostname}
+        resume={resume}
+      />
+    </>
   );
 }
 

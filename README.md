@@ -75,6 +75,25 @@ recusa a conexão de recarregamento automático vinda de outra origem.
 - **Ícones:** `icon.svg`, `favicon.ico` e `apple-icon.png` em `src/app`, pela convenção de
   arquivos do Next.
 
+## Buscadores e redes
+
+Tudo sai do conteúdo publicado e do `PUBLIC_ORIGIN`; nenhum domínio fica no código.
+
+- **Metadados por idioma:** título, descrição, canônica (`/pt/` e `/en/`) e `hreflang` dos dois
+  idiomas, com a raiz como `x-default`.
+- **Cartão de compartilhamento:** `/pt/og.jpg` e `/en/og.jpg` (Open Graph e Twitter), no visual
+  do site, com o nome, o título e a foto. É desenhado com o `next/og`, guardado em cache até a
+  próxima publicação e sai em JPEG para ficar leve. Os metadados apontam para ele com
+  `?v=<revisão>`, e as redes buscam a imagem nova depois de publicar.
+- **Dados estruturados:** JSON-LD `ProfilePage` com a pessoa (`Person`): cargo, descrição,
+  foto, e-mail, links (`sameAs`), onde trabalha, formação, habilidades, idiomas e prêmios. Sai
+  só do que a página mostra.
+- **`sitemap.xml`:** as duas páginas, com os endereços uma da outra e a data da última
+  publicação.
+- **`robots.txt`:** a mesma regra do `X-Robots-Tag`. No host canônico e com `ALLOW_INDEXING`,
+  todos os robôs entram (os de busca e os de IA), menos no painel, e o sitemap é indicado;
+  antes disso, ou em outro host, nenhum entra.
+
 ## Currículo
 
 O currículo sai do mesmo conteúdo do site, em PDF e DOCX, em português e inglês, num formato
@@ -102,8 +121,10 @@ pensado para recrutadores e sistemas de triagem (ATS).
   anterior são apagados. Se faltarem (uma revisão de antes do currículo, uma versão nova do
   formato), a rota os gera no primeiro pedido.
 - **Endereços fixos:** `/cv/curriculo.pdf`, `/cv/curriculo.docx`, `/cv/resume.pdf` e
-  `/cv/resume.docx`. A resposta sai com `Cache-Control: no-cache` e a ETag da revisão: o
-  navegador e a Cloudflare conferem antes de usar a cópia e nunca servem um currículo velho.
+  `/cv/resume.docx`. A resposta sai com `Cache-Control: no-cache` e a ETag da revisão, e a
+  Cloudflare confere com o servidor antes de usar a cópia dela. Os links do site levam
+  `?v=<revisão>`: o navegador guarda o arquivo por endereço, e o endereço muda a cada
+  publicação.
 - **No site:** o botão "Baixar currículo", no topo e no rodapé, abre a lista dos arquivos nos dois
   idiomas, com o tamanho de cada um.
 - **Telefone:** nunca vai para os arquivos públicos. A versão completa, com o telefone do campo
