@@ -14,10 +14,14 @@ export const jakarta = localFont({
   display: "swap",
 });
 
-/** JetBrains Mono, variável de 100 a 800: rótulos, datas e etiquetas. */
+/**
+ * JetBrains Mono no peso 400: rótulos, datas e etiquetas, que não usam outro
+ * peso. O arquivo de um peso tem metade do tamanho do variável, e as duas
+ * fontes descem antes da foto no celular.
+ */
 export const jetbrains = localFont({
-  src: "../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2",
-  weight: "100 800",
+  src: "../../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2",
+  weight: "400",
   variable: "--font-jetbrains",
   display: "swap",
 });

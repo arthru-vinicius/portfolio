@@ -21,9 +21,9 @@
     "docker:build": "cross-env DOCKER_BUILDKIT=0 docker build --build-arg GIT_SHA=local -t portfolio-web:local ."
   },
   "dependencies": {
-    "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "docx": "9.7.1",
     "next": "16.4.3",
     "pdfkit": "^0.20.2",
