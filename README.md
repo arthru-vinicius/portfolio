@@ -1,280 +1,302 @@
 # portfolio
 
-Portfólio profissional do Arthur Vinicius, publicado em **https://portfolio.arthru.com**:
-site em português e inglês, um painel para editar o conteúdo e o currículo gerado a partir dele,
-em PDF e DOCX para quem lê e em Markdown e JSON Resume para assistentes de IA.
+**English** · [Português](README.pt-BR.md)
 
-> Em construção. O site, o painel, o currículo, a otimização para buscadores e assistentes de IA
-> e os cabeçalhos de segurança já funcionam; faltam a auditoria final, o README em inglês e o
-> lançamento.
+Arthur Vinicius's professional portfolio, live at **https://portfolio.arthru.com**: a site in
+Portuguese and English, a panel to edit its content and a résumé generated from that same
+content, as PDF and DOCX for people and as Markdown and JSON Resume for AI assistants.
 
-## Arquitetura
+> Pre-launch. The site, the panel, the résumé, search engine and AI assistant optimization and
+> the security headers are live; search engines are kept out until launch.
 
-- **Next.js 16** (App Router e Cache Components), **React 19**, **TypeScript** estrito e
+## Architecture
+
+- **Next.js 16** (App Router and Cache Components), **React 19**, strict **TypeScript** and
   **Tailwind CSS 4**.
-- **Um container Docker** num servidor próprio ARM64, atrás de um Cloudflare Tunnel: nenhuma porta
-  aberta no servidor.
-- **SQLite** pelo módulo `node:sqlite` do próprio Node, com WAL e migrations aplicadas na subida.
-- **Publicar sem deploy:** as páginas leem a última revisão publicada por uma camada em cache, e
-  publicar invalida esse cache. O site muda em segundos.
-- **Deploy por puxada:** o servidor acompanha a `main` e, quando o check `verify` de um commit fica
-  verde, constrói a imagem, troca o container e volta sozinho para a versão anterior se o
-  healthcheck falhar. Nenhuma credencial do servidor fica no GitHub.
+- **One Docker container** on a self-hosted ARM64 server, behind a Cloudflare Tunnel: no port is
+  open on the server.
+- **SQLite** through Node's built-in `node:sqlite` module, with WAL and migrations applied at
+  startup.
+- **Publishing without a deploy:** pages read the latest published revision through a cached
+  layer, and publishing invalidates that cache. The site changes within seconds.
+- **Pull-based deploy:** the server follows `main` and, once a commit's `verify` check is green,
+  builds the image, swaps the container and rolls back to the previous version on its own if the
+  healthcheck fails. No server credential is stored on GitHub.
 
 ```
-GitHub (main + verify verde) ──▶ servidor: build, troca, rollback
-                                              │
-visitante ──▶ Cloudflare ──▶ túnel ──▶ container (Next.js + SQLite em /data)
+GitHub (main + green verify) ──▶ server: build, swap, rollback
+                                          │
+visitor ──▶ Cloudflare ──▶ tunnel ──▶ container (Next.js + SQLite in /data)
 ```
 
-## Rodando localmente
+## Running locally
 
-Requisitos: Node 22 (ver `.nvmrc`) e, para a imagem e os testes de ponta a ponta, Docker.
+Requirements: Node 22 (see `.nvmrc`) and, for the image and the end-to-end tests, Docker.
 
 ```bash
 npm ci
-npm run dev   # http://localhost:3000, com o banco em .data/portfolio.db
+npm run dev   # http://localhost:3000, with the database at .data/portfolio.db
 ```
 
-Na primeira vez, o `npm run dev` grava no banco local um documento fictício, como rascunho e
-como revisão publicada. As variáveis do servidor estão em `.env.example`; fora de produção, os
-valores padrão bastam para o site. Abra pelo `localhost`, e não por `127.0.0.1`: o `next dev`
-recusa a conexão de recarregamento automático vinda de outra origem.
+On the first run, `npm run dev` writes a fictitious document to the local database, as both the
+draft and a published revision. The server variables are listed in `.env.example`; outside
+production, the defaults are enough for the site. Open it through `localhost`, not `127.0.0.1`:
+`next dev` refuses the hot reload connection from another origin.
 
 ## Site
 
-- **Endereços:** `/pt/` e `/en/`, a URL canônica de cada idioma, com a barra no fim: o link de
-  uma seção fica `/pt/#experiencia`. A raiz `/` leva ao idioma do navegador (`Accept-Language`),
-  com um redirecionamento temporário que varia com o cabeçalho, e `/pt` leva a `/pt/` com um
-  permanente. Quem acrescenta a barra é o proxy, só nessas páginas: o Next não redireciona nada
-  (`skipTrailingSlashRedirect`), para o `/api/health` nunca ser redirecionado. Um endereço que
-  não existe dá um 404 nos dois idiomas (`global-not-found`).
-- **Conteúdo:** a última revisão publicada, só com os blocos e itens visíveis, na ordem do
-  painel. O menu do cabeçalho leva às seções principais (sobre, experiência, projetos, formação
-  e prêmios); habilidades, idiomas e blocos livres ficam só na página, e o contato fica com o
-  botão "Fale comigo", que no celular vira o último item do menu. Os textos longos aceitam um
-  subconjunto de Markdown (parágrafos, listas, negrito, itálico, código e links), que vira
-  elemento React, nunca HTML cru, e só aceita links `https:`, `http:` e `mailto:`.
-- **Tema:** segue o do sistema, e um botão troca entre sistema, claro e escuro. A escolha fica no
-  `localStorage`, sem cookie, e um script curto no `<head>` a aplica antes da primeira pintura.
-- **Visual:** quase preto com verde, títulos grandes com degradê, uma rede de partículas atrás do
-  topo, a faixa das habilidades e a barra de progresso da leitura. Os efeitos param fora da tela
-  e com "reduzir movimento". As fontes (Plus Jakarta Sans e JetBrains Mono, licença OFL) vêm dos
-  pacotes do Fontsource e são servidas pelo próprio site: o build não depende do Google Fonts.
-- **Pré-visualização:** `/admin/preview/pt` e `/admin/preview/en` mostram o rascunho com os
-  mesmos componentes do site, antes de publicar.
-- **Foto:** enviada no perfil do painel (`POST /admin/photo`, com sessão e conferência de
-  origem). O servidor gira a imagem pela orientação da câmera, descarta os metadados (EXIF, GPS),
-  reduz para 480 e 960 px e grava em WebP em `/data/media`, com o resumo SHA-256 do conteúdo no
-  nome. Por isso o arquivo nunca muda: `/media/<id>-<largura>.webp` sai com cache de um ano, e
-  trocar de foto passa pelo rascunho e pela publicação, como o resto do conteúdo. O `sizes` da
-  foto segue a largura dela em cada faixa de tela, e o celular comum baixa a de 480 px.
-- **Contato:** formulário com nome, e-mail e mensagem. A Server Action pública confere o limite
-  por IP (5 por hora), os campos, um campo-armadilha e o Turnstile, nessa ordem, e entrega a
-  mensagem em texto puro ao relay de e-mail, que manda para o dono do site. Fora de produção, ou
-  com `MAIL_RELAY_DRY_RUN=true`, o envio só vai para o log; em produção sem o relay, o
-  formulário some e fica o e-mail. O Turnstile do formulário só carrega quando ele chega perto
-  da tela: o widget baixa centenas de KB, e quem não rola até o contato não paga por eles.
-- **Ícones:** `icon.svg`, `favicon.ico` e `apple-icon.png` em `src/app`, pela convenção de
-  arquivos do Next.
+- **URLs:** `/pt/` and `/en/`, the canonical URL of each language, with a trailing slash, so a
+  section link reads `/pt/#experiencia`. The root `/` leads to the browser's language
+  (`Accept-Language`) with a temporary redirect that varies on that header, and `/pt` leads to
+  `/pt/` with a permanent one. The proxy adds the slash, and only on those pages: Next redirects
+  nothing (`skipTrailingSlashRedirect`), so `/api/health` is never redirected. A URL that doesn't
+  exist gets a 404 in both languages (`global-not-found`).
+- **Content:** the latest published revision, with only the visible blocks and items, in the
+  panel's order. The header menu leads to the main sections (about, experience, projects,
+  education and awards); skills, languages and free-form blocks are only on the page, and contact
+  has the "Get in touch" button, which becomes the last menu item on mobile. Long texts accept a
+  subset of Markdown (paragraphs, lists, bold, italics, code and links), which becomes React
+  elements, never raw HTML, and only accepts `https:`, `http:` and `mailto:` links.
+- **Theme:** follows the system's, and a button switches between system, light and dark. The
+  choice is kept in `localStorage`, with no cookie, and a short script in `<head>` applies it
+  before the first paint.
+- **Look:** near-black with green, large gradient headings, a particle network behind the hero,
+  the skills strip and the reading progress bar. The effects pause off-screen and with "reduce
+  motion". The fonts (Plus Jakarta Sans and JetBrains Mono, OFL license) come from the Fontsource
+  packages and are served by the site itself: the build doesn't depend on Google Fonts. The mono
+  font only comes in weight 400, the only one the labels use, at half the size of the variable
+  one.
+- **Preview:** `/admin/preview/pt` and `/admin/preview/en` show the draft with the same
+  components as the site, before publishing.
+- **Photo:** uploaded in the panel's profile screen (`POST /admin/photo`, with a session and an
+  origin check). The server rotates the image according to the camera orientation, strips the
+  metadata (EXIF, GPS), scales it down to 480 and 960 px and stores it as WebP in `/data/media`,
+  named after the SHA-256 digest of its content. So a file never changes:
+  `/media/<id>-<width>.webp` is served with a one-year cache, and changing the photo goes through
+  the draft and publishing, like the rest of the content. The photo's `sizes` follows its width
+  at each breakpoint, and a typical phone downloads the 480 px one.
+- **Contact:** a form with name, email and message. The public Server Action checks the per-IP
+  limit (5 per hour), the fields, a honeypot field and Turnstile, in that order, and hands the
+  message as plain text to the email relay, which sends it to the site owner. Outside production,
+  or with `MAIL_RELAY_DRY_RUN=true`, messages only go to the log; in production without the relay,
+  the form is hidden and the email address remains. The form's Turnstile only loads when the
+  form gets close to the screen: the widget downloads hundreds of KB, and visitors who never
+  scroll to the contact section don't pay for them.
+- **Icons:** `icon.svg`, `favicon.ico` and `apple-icon.png` in `src/app`, through Next's file
+  conventions.
 
-## Buscadores e redes
+## Search engines and social networks
 
-Tudo sai do conteúdo publicado e do `PUBLIC_ORIGIN`; nenhum domínio fica no código.
+Everything comes from the published content and `PUBLIC_ORIGIN`; no domain is hard-coded.
 
-- **Metadados por idioma:** título, descrição, canônica (`/pt/` e `/en/`) e `hreflang` dos dois
-  idiomas, com a raiz como `x-default`. Vão sempre no `<head>` (`htmlLimitedBots: /.*/`): por
-  padrão, numa página dinâmica, o Next os manda no fim do `<body>`, menos para uma lista de robôs
-  da qual os de IA não fazem parte.
-- **Cartão de compartilhamento:** `/pt/og.jpg` e `/en/og.jpg` (Open Graph e Twitter), no visual
-  do site, com o nome, o título e a foto. É desenhado com o `next/og`, guardado em cache até a
-  próxima publicação e sai em JPEG para ficar leve. Os metadados apontam para ele com
-  `?v=<revisão>`, e as redes buscam a imagem nova depois de publicar.
-- **Dados estruturados:** JSON-LD `ProfilePage` com a pessoa (`Person`): cargo, descrição,
-  foto, e-mail, links (`sameAs`), onde trabalha, formação, habilidades, idiomas e prêmios. Sai
-  só do que a página mostra.
-- **`sitemap.xml`:** as duas páginas, com os endereços uma da outra e a data da última
-  publicação.
-- **`robots.txt`:** a mesma regra do `X-Robots-Tag`. No host canônico e com `ALLOW_INDEXING`,
-  todos os robôs entram (os de busca e os de IA), menos no painel, e o sitemap é indicado;
-  antes disso, ou em outro host, nenhum entra.
-- **Para assistentes de IA:** o `/llms.txt` (convenção do `llmstxt.org`) traz o nome, o título
-  numa linha, o resumo profissional e os links do currículo em Markdown e em JSON Resume nos dois
-  idiomas, das páginas, dos perfis e do contato; o PDF e o DOCX ficam na seção `Optional`. Os
-  títulos saem em inglês, e cada arquivo leva o nome no idioma dele. A página de cada idioma
-  também aponta o currículo em texto e em dados com `<link rel="alternate">` (`text/markdown` e
-  `application/json`).
+- **Metadata per language:** title, description, canonical URL (`/pt/` and `/en/`) and
+  `hreflang` for both languages, with the root as `x-default`. They always go in `<head>`
+  (`htmlLimitedBots: /.*/`): by default, on a dynamic page, Next sends them at the end of
+  `<body>`, except to a list of bots that leaves out the AI ones.
+- **Share card:** `/pt/og.jpg` and `/en/og.jpg` (Open Graph and Twitter), in the site's look,
+  with the name, the job title and the photo. It is drawn with `next/og`, cached until the next
+  publish and served as JPEG to stay light. The metadata points to it with `?v=<revision>`, so
+  social networks fetch the new image after a publish.
+- **Structured data:** a JSON-LD `ProfilePage` with the person (`Person`): job title,
+  description, photo, email, links (`sameAs`), employer, education, skills, languages and
+  awards. It only uses what the page shows.
+- **`sitemap.xml`:** both pages, each with the other's URL and the date of the last publish.
+- **`robots.txt`:** the same rule as `X-Robots-Tag`. On the canonical host and with
+  `ALLOW_INDEXING`, every bot is allowed (search and AI ones), except into the panel, and the
+  sitemap is listed; before that, or on another host, none is.
+- **For AI assistants:** `/llms.txt` (the `llmstxt.org` convention) has the name, the job title
+  in one line, the professional summary and links to the résumé in Markdown and in JSON Resume in
+  both languages, to the pages, to the profiles and to the contact section; the PDF and the DOCX
+  go in the `Optional` section. The headings are in English, and each file is named in its own
+  language. The page of each language also points to the résumé as text and as data with
+  `<link rel="alternate">` (`text/markdown` and `application/json`).
 
-## Segurança e medição
+## Security and analytics
 
-O proxy põe os mesmos cabeçalhos em toda resposta (o `/api/health` fica de fora, como o
-contrato com o servidor pede):
+The proxy sets the same headers on every response (`/api/health` is left out, as the server
+contract requires):
 
-- **Content Security Policy** sem nonce. A casca de cada idioma sai pronta do build, e o Next não
-  combina nonce com essa pré-renderização parcial; por isso os scripts embutidos que ele escreve
-  (os dados do React e o script do tema) pedem `'unsafe-inline'`. A política limita o resto:
-  scripts só do próprio site, do Turnstile e do Web Analytics; conexões só com o próprio site e
-  com o receptor do Web Analytics; o único iframe é o do Turnstile; nenhum site põe estas páginas
-  num iframe (`frame-ancestors 'none'`); sem `<object>` e sem `<base>` de fora. No painel, a CSP
-  não deixa o Web Analytics entrar. No `next dev`, ela libera `eval` e WebSocket para a recarga
-  ao vivo.
+- **Content Security Policy** without a nonce. The shell of each language is prerendered at build
+  time, and Next doesn't combine a nonce with that partial prerendering; so the inline scripts it
+  writes (React's data and the theme script) need `'unsafe-inline'`. The policy limits the rest:
+  scripts only from the site itself, Turnstile and Web Analytics; connections only to the site
+  itself and to the Web Analytics endpoint; the only iframe is Turnstile's; no site can put these
+  pages in an iframe (`frame-ancestors 'none'`); no `<object>` and no `<base>` from elsewhere. On
+  the panel, the CSP keeps Web Analytics out. Under `next dev`, it allows `eval` and WebSocket for
+  hot reload.
 - **`X-Content-Type-Options: nosniff`**, **`Referrer-Policy: strict-origin-when-cross-origin`**,
-  **`X-Frame-Options: DENY`**, **`Cross-Origin-Opener-Policy: same-origin`** e uma
-  **`Permissions-Policy`** que desliga câmera, microfone, localização, pagamento e afins.
-- **O zod sem `eval`:** o painel valida no navegador com os mesmos schemas, e o zod roda em modo
-  `jitless`, sem tentar compilar os validadores com `Function`.
-- **Estáticos:** os arquivos de `/_next/static` têm o nome tirado do conteúdo e já saem do Next
-  com `Cache-Control: public, max-age=31536000, immutable`.
-- **Cloudflare Web Analytics** (sem cookie e sem banner): só nas páginas públicas, com o token em
-  `WEB_ANALYTICS_TOKEN`. Sem a variável, o site não carrega o script. O script entra depois que
-  a página termina de carregar, para não disputar a banda com o conteúdo.
+  **`X-Frame-Options: DENY`**, **`Cross-Origin-Opener-Policy: same-origin`** and a
+  **`Permissions-Policy`** that turns off camera, microphone, geolocation, payment and the like.
+- **zod without `eval`:** the panel validates in the browser with the same schemas, and zod runs
+  in `jitless` mode, without trying to compile the validators with `Function`.
+- **Static files:** the files in `/_next/static` are named after their content and already leave
+  Next with `Cache-Control: public, max-age=31536000, immutable`.
+- **Cloudflare Web Analytics** (no cookie and no banner): only on the public pages, with the
+  token in `WEB_ANALYTICS_TOKEN`. Without the variable, the site doesn't load the script. The
+  script loads after the page has finished loading, so it doesn't compete with the content for
+  bandwidth.
 
-## Currículo
+## Résumé
 
-O currículo sai do mesmo conteúdo do site, em português e inglês: em PDF e DOCX, num formato
-pensado para recrutadores e sistemas de triagem (ATS), e em Markdown e JSON Resume, para
-assistentes de IA e ferramentas que leem texto ou dados sem adivinhar o layout.
+The résumé comes from the same content as the site, in Portuguese and English: as PDF and DOCX,
+in a format designed for recruiters and applicant tracking systems (ATS), and as Markdown and
+JSON Resume, for AI assistants and tools that read text or data without guessing the layout.
 
-- **O que entra:** o que está marcado "No currículo" em cada item (mesmo oculto no site), os
-  destaques marcados e o resumo profissional da tela Currículo. As seções seguem a ordem do
-  mercado, e não a do site: resumo, experiência, habilidades, projetos, formação, prêmios e
-  idiomas. Experiências, cursos e prêmios vêm do mais recente para o mais antigo, e os meses saem
-  como `MM/AAAA`.
-- **Um modelo, quatro formatos:** `buildResumeModel` monta o currículo de um idioma em texto puro
-  (o Markdown do painel vira texto, e os links ficam com o endereço escrito), e `layoutResume` o
-  dispõe em seções e linhas. O PDF, o DOCX e o Markdown só desenham esse layout, então têm o mesmo
-  texto, na mesma ordem; o JSON Resume sai do mesmo modelo.
-- **PDF** (pdfkit): A4, uma coluna, sem tabela, imagem, cabeçalho ou rodapé de página. Texto real,
-  com a Inter embutida (licença OFL, do Fontsource) e os acentos certos ao copiar. Sai marcado
-  (tagged), com o idioma, título, autor, assunto e palavras-chave. Um caractere que a fonte não
-  tem vira um equivalente, como `→` em `->`.
-- **DOCX** (docx): para quem precisa de um arquivo editável ou de um formato que a plataforma da
-  vaga aceite. Uma coluna, sem tabela nem caixa de texto, com os estilos do próprio Word (o nome
-  em Título 1, as seções em Título 2, listas com marcador de verdade), Calibri, o idioma do texto
-  e as propriedades do documento.
-- **Markdown:** o texto do PDF, sem o layout: o nome como `#`, as seções como `##`, cada item
-  como `###`, listas e links de verdade, com o texto escapado para nada virar marcação por
-  acidente. Leva também o link do portfólio no idioma, se nenhum link do perfil já aponta para o
-  site.
-- **JSON Resume** (`jsonresume.org`, v1.0.0): os mesmos dados em campos padrão (`basics`, `work`,
-  `education`, `skills`, `projects`, `awards`, `languages`), com as datas em `AAAA-MM`, as
-  tecnologias em `keywords` e a conclusão prevista de um curso em andamento como `endDate`. Sem
-  campo vazio, e com o endereço do portfólio e do próprio arquivo.
-- **Quando é gerado:** ao publicar, antes de gravar a revisão; se o gerador falhar, nada é
-  publicado. Os oito arquivos vão para `/data/cv/<revisão>-v<formato>/`, e os da revisão
-  anterior são apagados. Se faltarem (uma revisão de antes do currículo, uma versão nova do
-  formato), a rota os gera no primeiro pedido.
-- **Endereços fixos:** `/cv/curriculo.pdf`, `.docx`, `.md` e `.json`, e o mesmo com `resume`
-  em inglês. O DOCX baixa; os outros abrem no navegador. A resposta sai com
-  `Cache-Control: no-cache` e a ETag da revisão, e a
-  Cloudflare confere com o servidor antes de usar a cópia dela. Os links do site levam
-  `?v=<revisão>`: o navegador guarda o arquivo por endereço, e o endereço muda a cada
-  publicação.
-- **No site:** o botão "Baixar currículo", no topo e no rodapé, abre a lista do PDF e do DOCX nos
-  dois idiomas, com o tamanho de cada um. O Markdown e o JSON ficam fora do botão; quem os acha é
-  o `/llms.txt` e o `<link rel="alternate">` da página.
-- **Telefone:** nunca vai para os arquivos públicos. A versão completa, com o telefone do campo
-  privado, sai só no painel.
+- **What goes in:** whatever each item marks for the résumé (even when hidden on the site), the
+  marked highlights and the professional summary from the résumé screen. The sections follow the
+  job market's order, not the site's: summary, experience, skills, projects, education, awards
+  and languages. Jobs, courses and awards go from newest to oldest, and months are written as
+  `MM/YYYY`.
+- **One model, four formats:** `buildResumeModel` builds the résumé of one language as plain text
+  (the panel's Markdown becomes text, and links keep their address written out), and
+  `layoutResume` lays it out in sections and lines. The PDF, the DOCX and the Markdown only draw
+  that layout, so they have the same text in the same order; the JSON Resume comes from the same
+  model.
+- **PDF** (pdfkit): A4, one column, no tables, images, page headers or footers. Real text, with
+  Inter embedded (OFL license, from Fontsource) and accents that copy correctly. It is tagged,
+  with language, title, author, subject and keywords. A character the font doesn't have becomes
+  an equivalent, such as `→` into `->`.
+- **DOCX** (docx): for anyone who needs an editable file or a format the job platform accepts.
+  One column, no tables or text boxes, with Word's own styles (the name in Heading 1, the
+  sections in Heading 2, real bulleted lists), Calibri, the language of the text and the
+  document properties.
+- **Markdown:** the text of the PDF without the layout: the name as `#`, the sections as `##`,
+  each item as `###`, real lists and links, with the text escaped so nothing becomes markup by
+  accident. It also has the portfolio link in its language, unless a profile link already points
+  to the site.
+- **JSON Resume** (`jsonresume.org`, v1.0.0): the same data in standard fields (`basics`,
+  `work`, `education`, `skills`, `projects`, `awards`, `languages`), with dates as `YYYY-MM`, the
+  technologies in `keywords` and the expected completion of an ongoing course as `endDate`. No
+  empty fields, and with the URLs of the portfolio and of the file itself.
+- **When it is generated:** on publish, before the revision is saved; if the generator fails,
+  nothing is published. The eight files go to `/data/cv/<revision>-v<format>/`, and the files of
+  the previous revision are deleted. If they are missing (a revision from before the résumé, a
+  new format version), the route generates them on the first request.
+- **Fixed URLs:** `/cv/curriculo.pdf`, `.docx`, `.md` and `.json`, and the same with `resume` in
+  English. The DOCX downloads; the others open in the browser. The response has
+  `Cache-Control: no-cache` and the revision's ETag, and Cloudflare checks with the server before
+  using its copy. The links on the site carry `?v=<revision>`: the browser caches a file by URL,
+  and the URL changes with every publish.
+- **On the site:** the "Download résumé" button, at the top and in the footer, opens the list of
+  the PDF and DOCX files in both languages, with the size of each. The Markdown and the JSON are
+  left out of the button; `/llms.txt` and the page's `<link rel="alternate">` point to them.
+- **Phone number:** never goes into the public files. The full version, with the phone number
+  from the private field, is only available in the panel.
 
-## Painel
+## Panel
 
-O painel fica em `/admin`, com login por usuário e senha. Sem a configuração completa, ele
-responde 503: nenhum segredo tem valor padrão, em nenhum ambiente.
+The panel is at `/admin`, with a username and password login, and its interface is in
+Portuguese. Without the complete configuration, it answers 503: no secret has a default value,
+in any environment.
 
-**Para usar no `npm run dev`**, crie um `.env.local` a partir do `.env.example` e preencha:
+**To use it under `npm run dev`**, create a `.env.local` from `.env.example` and fill in:
 
-- `ADMIN_USERNAME`: um nome qualquer;
-- `ADMIN_PASSWORD_HASH`: o hash de uma senha local, gerado por
-  `npm run --silent admin:hash-password` (a senha é lida sem eco);
-- `ADMIN_SESSION_SECRET`: um texto com 32 caracteres ou mais.
+- `ADMIN_USERNAME`: any name;
+- `ADMIN_PASSWORD_HASH`: the hash of a local password, generated by
+  `npm run --silent admin:hash-password` (the password is read without echo);
+- `ADMIN_SESSION_SECRET`: a text with 32 characters or more.
 
-O Turnstile do login usa as chaves de teste da Cloudflare, que sempre passam.
+The login's Turnstile uses Cloudflare's test keys, which always pass.
 
-**No servidor**, os valores são segredos, gravados pelo mantenedor:
+**On the server**, the values are secrets, set by the maintainer:
 
-| Segredo | Para quê | Formato e como gerar |
+| Secret | Purpose | Format and how to generate it |
 |---|---|---|
-| `ADMIN_USERNAME` | usuário do login | texto livre |
-| `ADMIN_PASSWORD_HASH` | confere a senha | `scrypt:N:r:p:<sal>:<hash>`, a saída de `npm run --silent admin:hash-password` |
-| `ADMIN_SESSION_SECRET` | assina o cookie da sessão | 32 caracteres ou mais, aleatórios (de um gerenciador de senhas). Trocar o valor derruba todas as sessões |
-| `TURNSTILE_SECRET_KEY` | confere o Turnstile do login | a secret do widget, no painel da Cloudflare |
+| `ADMIN_USERNAME` | login username | free text |
+| `ADMIN_PASSWORD_HASH` | checks the password | `scrypt:N:r:p:<salt>:<hash>`, the output of `npm run --silent admin:hash-password` |
+| `ADMIN_SESSION_SECRET` | signs the session cookie | 32 random characters or more (from a password manager). Changing it signs out every session |
+| `TURNSTILE_SECRET_KEY` | checks the login's Turnstile | the widget's secret key, from the Cloudflare dashboard |
 
-Nenhum dos valores pode ter aspas simples nem quebra de linha. Trocar o usuário ou a senha
-também derruba as sessões abertas.
+None of the values may contain single quotes or line breaks. Changing the username or the
+password also signs out the open sessions.
 
-**Edição do conteúdo:**
+**Editing content:**
 
-- Cada parte tem a sua tela: o perfil, a lista de blocos (ordem, visibilidade, blocos novos e
-  removidos), cada bloco com os itens dele e o currículo. Os textos têm os dois idiomas lado a
-  lado, com aviso de tradução faltando.
-- Salvar grava o rascunho, que o site não mostra: as páginas leem só a revisão publicada.
-- Cada tela guarda a versão da parte que abriu. Se a mesma parte mudou em outra aba, salvar é
-  recusado, em vez de apagar a outra alteração; mudar outra parte não atrapalha.
-- Sair de uma tela com alterações não salvas pede confirmação. A ordem dos itens muda por
-  botões, que funcionam pelo teclado.
-- **Publicar**, na visão geral, gera o currículo, grava uma revisão nova e expira o cache das
-  páginas (`updateTag`): o site muda na próxima visita, sem deploy. Antes, a publicação confere o rascunho: todo texto
-  que vai para o site ou para o currículo precisa dos dois idiomas, os campos principais de cada
-  item precisam estar preenchidos e ao menos um bloco precisa estar visível. O que falta aparece
-  na visão geral, com link para a tela que corrige. A página publica exatamente a versão que
-  mostrava: se o rascunho mudou em outra aba, a publicação é recusada.
-- **Currículo:** o resumo profissional e os arquivos do rascunho, gerados na hora para conferir
-  antes de publicar (`/admin/cv/<arquivo>`). Ali também sai a versão completa, com o telefone,
-  que é entregue só nessa resposta e nunca gravada.
-- **Histórico:** as revisões publicadas, da mais recente para a mais antiga, cada uma com
-  download em YAML e **Restaurar como rascunho**. Restaurar não publica, e as revisões nunca
-  mudam: o banco recusa alterá-las ou apagá-las.
-- **Exportar e importar em YAML**, na visão geral. O arquivo exportado, com os campos privados,
-  é a cópia do conteúdo fora do servidor, e dá para editá-lo à mão: os textos de várias linhas
-  ficam em bloco literal (`|`), e um item novo pode ficar sem `id`, que ele ganha na importação.
-  Importar aceita YAML ou JSON, valida o arquivo e substitui o rascunho, sem publicar. O leitor
-  usa o YAML 1.2 padrão e recusa tags próprias, alias e mais de um documento por arquivo.
+- Each part has its own screen: the profile, the block list (order, visibility, new and removed
+  blocks), each block with its items, and the résumé. Texts show both languages side by side,
+  with a warning when a translation is missing.
+- Saving writes the draft, which the site doesn't show: the pages only read the published
+  revision.
+- Each screen keeps the version of the part it opened. If the same part changed in another tab,
+  saving is refused instead of overwriting the other change; changing another part doesn't get
+  in the way.
+- Leaving a screen with unsaved changes asks for confirmation. Items are reordered with buttons,
+  which work from the keyboard.
+- **Publishing**, from the overview, generates the résumé, saves a new revision and expires the
+  pages' cache (`updateTag`): the site changes on the next visit, without a deploy. Publishing
+  first checks the draft: every text that goes to the site or to the résumé needs both
+  languages, the main fields of each item must be filled in and at least one block must be
+  visible. What's missing shows up on the overview, with a link to the screen that fixes it. The
+  page publishes exactly the version it was showing: if the draft changed in another tab,
+  publishing is refused.
+- **Résumé:** the professional summary and the draft's files, generated on the spot to be checked
+  before publishing (`/admin/cv/<file>`). The full version, with the phone number, also comes
+  from there; it is only delivered in that response and never stored.
+- **History:** the published revisions, newest first, each with a YAML download and a restore as
+  draft. Restoring doesn't publish, and revisions never change: the database refuses to update or
+  delete them.
+- **YAML export and import**, on the overview. The exported file, with the private fields, is the
+  copy of the content outside the server, and it can be edited by hand: multi-line texts are
+  literal blocks (`|`), and a new item can be left without an `id`, which it gets on import.
+  Import accepts YAML or JSON, validates the file and replaces the draft, without publishing. The
+  parser uses standard YAML 1.2 and refuses custom tags, aliases and more than one document per
+  file.
 
-**Proteções:**
+**Protections:**
 
-- O painel só responde nos hosts de `ADMIN_HOSTS`; nos outros, é 404.
-- A sessão é um cookie `__Host-` assinado (HMAC-SHA256), `HttpOnly`, `Secure` e
-  `SameSite=Strict`, que vale por 8 horas.
-- O login exige o Turnstile e aceita 5 tentativas por IP a cada 15 minutos. A contagem fica no
-  banco e sobrevive a um deploy.
-- A senha é conferida com `scrypt` (64 MiB por tentativa), em tempo constante. Usuário e senha
-  errados dão a mesma resposta.
-- O proxy faz a primeira barreira (host, configuração e sessão), e cada página, Server Action e
-  route handler confere a sessão de novo. Os testes mantêm a lista de todas as Server Actions e
-  dos route handlers do painel e chamam cada um sem sessão.
-- Pedidos que chegam por HTTP vão para HTTPS, e as respostas em HTTPS levam HSTS, sem
+- The panel only answers on the hosts in `ADMIN_HOSTS`; on any other, it's a 404.
+- The session is a signed `__Host-` cookie (HMAC-SHA256), `HttpOnly`, `Secure` and
+  `SameSite=Strict`, valid for 8 hours.
+- The login requires Turnstile and allows 5 attempts per IP every 15 minutes. The count is kept in
+  the database and survives a deploy.
+- The password is checked with `scrypt` (64 MiB per attempt), in constant time. A wrong username
+  and a wrong password get the same answer.
+- The proxy is the first barrier (host, configuration and session), and every page, Server Action
+  and route handler checks the session again. The tests keep a list of every Server Action and
+  route handler of the panel and call each one without a session.
+- Requests that arrive over HTTP go to HTTPS, and HTTPS responses carry HSTS, without
   `includeSubDomains`.
 
 ## Scripts
 
-| Script | O que faz |
+| Script | What it does |
 |---|---|
-| `npm run dev` | servidor de desenvolvimento, com o banco local semeado |
-| `npm run db:seed` | grava o documento fictício no banco local (`-- --force` sobrescreve) |
-| `npm run admin:hash-password` | gera o hash da senha do painel; com a senha real, só o mantenedor roda |
-| `npm run build` | build de produção |
-| `npm run lint` · `npm run typecheck` · `npm test` | ESLint, TypeScript e testes de unidade (Vitest) |
-| `npm run format` | formata o código com o Prettier |
-| `npm run docker:build` | constrói a imagem como o servidor faz (builder clássico do Docker) |
-| `npm run test:e2e` | Playwright contra o container local, com os limites de produção (o Chromium vem de `npx playwright install chromium`) |
+| `npm run dev` | development server, with the local database seeded |
+| `npm run db:seed` | writes the fictitious document to the local database (`-- --force` overwrites it) |
+| `npm run admin:hash-password` | generates the panel's password hash; with the real password, only the maintainer runs it |
+| `npm run build` | production build |
+| `npm run lint` · `npm run typecheck` · `npm test` | ESLint, TypeScript and unit tests (Vitest) |
+| `npm run format` | formats the code with Prettier |
+| `npm run docker:build` | builds the image the way the server does (Docker's classic builder) |
+| `npm run test:e2e` | Playwright against the local container, with the production limits (Chromium comes from `npx playwright install chromium`) |
 
-## Contrato com o servidor
+## Server contract
 
-- O container escuta em `0.0.0.0:3000`, roda como o uid 1001 e grava apenas em `/data`: o banco,
-  as fotos (`/data/media`) e os arquivos do currículo (`/data/cv`, que o app gera de novo se
-  sumirem).
-- `GET /api/health` responde 200 com o banco aberto e as migrations aplicadas, e 503 caso
-  contrário. O corpo traz a versão da imagem e o status do último deploy.
-- Nenhum domínio fica no código: as URLs absolutas e a regra de indexação saem do
-  `PUBLIC_ORIGIN`. Só o host dele pode ser indexado, e só com `ALLOW_INDEXING=true`. As outras
-  respostas levam `X-Robots-Tag: noindex`.
-- `WEB_ANALYTICS_TOKEN`, opcional, liga o Cloudflare Web Analytics nas páginas públicas. O token
-  aparece no HTML, mas é dado da conta: fica no servidor, nunca no repositório.
-- O job de CI se chama `verify` e roda em ARM64, a mesma arquitetura do servidor.
+- The container listens on `0.0.0.0:3000`, runs as uid 1001 and only writes to `/data`: the
+  database, the photos (`/data/media`) and the résumé files (`/data/cv`, which the app generates
+  again if they go missing).
+- `GET /api/health` answers 200 with the database open and the migrations applied, and 503
+  otherwise. The body has the image version and the status of the last deploy.
+- No domain is hard-coded: the absolute URLs and the indexing rule come from `PUBLIC_ORIGIN`.
+  Only its host can be indexed, and only with `ALLOW_INDEXING=true`. Every other response carries
+  `X-Robots-Tag: noindex`.
+- `WEB_ANALYTICS_TOKEN`, optional, turns on Cloudflare Web Analytics on the public pages. The
+  token shows up in the HTML, but it is account data: it stays on the server, never in the
+  repository.
+- The CI job is called `verify` and runs on ARM64, the same architecture as the server.
 
-## Desenvolvimento com IA
+## Development with AI
 
-Este repositório é desenvolvido com agentes de IA (Claude Code), sob as regras do
-[`AGENTS.md`](AGENTS.md). Cada mudança chega por pull request, revisado e mesclado pelo
-mantenedor; o CI e o deploy com volta automática são a rede de proteção. Os commits feitos com o
-agente levam o trailer `Co-Authored-By`.
+This repository is built with an AI coding agent (Claude Code), working under the rules in
+[`AGENTS.md`](AGENTS.md), and every change goes through human review:
+
+- **Written rules.** `AGENTS.md` is the project's contract: the repository is public, so no
+  secrets or personal data; agents neither generate nor ask for secrets; every panel action
+  checks the session on its own; the docs to read are those of the installed Next.js version,
+  not the model's memory; and before calling something done, the type check, lint, unit tests,
+  build and Docker image run, and whatever wasn't tested is stated.
+- **Review.** Every change arrives as a pull request, reviewed and merged by the maintainer; the
+  agent never merges its own work. Commits made with the agent carry a `Co-Authored-By` trailer.
+- **Safety net.** CI builds the image on ARM64 and runs the end-to-end tests against the
+  container, with axe in both themes. Merging to `main` is publishing: the server deploys the
+  green commit and rolls back to the previous version on its own if the healthcheck fails.

@@ -58,7 +58,9 @@ O `package.json` é a fonte da verdade; estes são os principais.
    revisa e mescla. Nada de push direto na `main`, `--force` ou `--no-verify`, e nenhum PR é
    mesclado por quem o abriu. **Mesclar na `main` é publicar:** o servidor implanta sozinho.
 3. **Código em inglês** (identificadores, arquivos, pastas, branches). **Texto para humanos em
-   português**: comentários, TSDoc, documentação, commits (sem acento) e PRs. Texto exibido no
+   português**: comentários, TSDoc, documentação, commits (sem acento) e PRs. A exceção é o
+   README, que existe em inglês (`README.md`) e em português (`README.pt-BR.md`): os dois mudam
+   juntos, no mesmo commit. Texto exibido no
    site existe em pt-BR e em inglês: o conteúdo vem do painel, e os textos fixos da interface
    vêm dos dicionários de idioma, nunca soltos em componente.
 4. **O repositório entrega uma imagem; o servidor é de outro lugar.** O `Dockerfile` e o

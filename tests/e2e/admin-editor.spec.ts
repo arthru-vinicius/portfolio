@@ -437,6 +437,48 @@ test("o site oferece o currículo da publicação, em PDF e DOCX", async ({
   );
 });
 
+test("o site funciona só com o teclado", async ({ page }) => {
+  await page.goto("/pt/");
+  // O primeiro Tab mostra o atalho, que leva o foco direto ao conteúdo.
+  await page.keyboard.press("Tab");
+  const skip = page.getByRole("link", { name: ptBR.site.skipToContent });
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeInViewport();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main")).toBeFocused();
+
+  // O menu do currículo abre com Enter, deixa o Tab entrar na lista e fecha
+  // com Esc, devolvendo o foco ao botão.
+  const resume = page.locator("#topo details");
+  const summary = resume.locator("summary");
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(resume).toHaveAttribute("open");
+  await page.keyboard.press("Tab");
+  await expect(resume.getByRole("link").first()).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(resume).not.toHaveAttribute("open");
+  await expect(summary).toBeFocused();
+
+  // No celular, as seções ficam num menu, com as mesmas regras.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const menu = page.getByRole("button", { name: ptBR.site.menu, exact: true });
+  await menu.focus();
+  await page.keyboard.press("Enter");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.keyboard.press("Tab");
+  await expect(
+    page
+      .getByRole("navigation", { name: ptBR.site.menu })
+      .getByRole("link")
+      .first(),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await expect(menu).toBeFocused();
+});
+
 test("só carrega o Turnstile quando o contato se aproxima", async ({
   page,
 }) => {
@@ -568,11 +610,16 @@ test("aponta o que falta publicar e restaura a revisão do histórico", async ({
 });
 
 for (const colorScheme of ["light", "dark"] as const) {
-  test(`site e pré-visualização sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
+  test(`site, 404 e pré-visualização sem violações do axe, no tema ${colorScheme === "light" ? "claro" : "escuro"}`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
-    for (const path of ["/pt/", "/en/", "/admin/preview/pt"]) {
+    for (const path of [
+      "/pt/",
+      "/en/",
+      "/pt/nao-existe",
+      "/admin/preview/pt",
+    ]) {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       expect(
