@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 
 import { cardClass, secondaryButtonClass } from "@/components/admin/styles";
+import {
+  toPublicDocument,
+  type PublicDocument,
+} from "@/content/public-projection";
 import { adminMessages } from "@/i18n/admin";
-import { locales } from "@/i18n/config";
+import { locales, type Locale } from "@/i18n/config";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { resumeFiles } from "@/lib/resume/catalog";
+import { RESUME_MAX_PAGES } from "@/lib/resume/pdf";
+import { resumePdfPages } from "@/lib/resume/render";
 
 import { draftParts, versionOf } from "../draft-parts";
 import { loadEditableDraft } from "../editable-draft";
@@ -47,8 +53,28 @@ function DraftFiles({
 }
 
 /**
+ * Avisa quando nem o PDF mais compacto de um idioma cabe em duas páginas.
+ * Para contar as páginas, gera o PDF: a tela leva uns décimos de segundo a
+ * mais, só aqui.
+ */
+async function PageLimitWarning({
+  document,
+  locale,
+}: {
+  document: PublicDocument;
+  locale: Locale;
+}) {
+  const pages = await resumePdfPages(document, locale);
+  if (pages <= RESUME_MAX_PAGES) {
+    return null;
+  }
+  return <p className="text-sm text-warning">{messages.tooLong(pages)}</p>;
+}
+
+/**
  * O que é próprio do currículo, como o resumo profissional, e os arquivos do
- * rascunho para conferir antes de publicar.
+ * rascunho para conferir antes de publicar. Avisa quando o PDF de um idioma
+ * passa de duas páginas.
  */
 export default async function ResumePage() {
   await requireAdmin();
@@ -85,6 +111,10 @@ export default async function ResumePage() {
               {locales.map((locale) => (
                 <div key={locale} className="flex flex-col gap-3">
                   <h3 className="font-semibold">{languageNames[locale]}</h3>
+                  <PageLimitWarning
+                    document={toPublicDocument(draft.document)}
+                    locale={locale}
+                  />
                   <div className="flex flex-col gap-1.5">
                     <p className="text-sm text-muted">
                       {messages.publicVersion}

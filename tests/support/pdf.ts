@@ -5,6 +5,8 @@ export type PdfSummary = {
   pages: number;
   /** O texto extraído, uma linha por linha do PDF, como um ATS o leria. */
   text: string;
+  /** O mesmo texto, separado por página. */
+  pageTexts: string[];
   info: Record<string, unknown>;
   /** Se o PDF é marcado (tagged). */
   marked: boolean;
@@ -22,16 +24,18 @@ export async function readPdf(data: Uint8Array): Promise<PdfSummary> {
   const task = getDocument({ data: new Uint8Array(data) });
   const pdf = await task.promise;
   try {
-    let text = "";
+    const pageTexts: string[] = [];
     for (let number = 1; number <= pdf.numPages; number++) {
       const content = await (await pdf.getPage(number)).getTextContent();
+      let page = "";
       for (const item of content.items) {
         if ("str" in item) {
-          text += item.str + (item.hasEOL ? "\n" : "");
+          page += item.str + (item.hasEOL ? "\n" : "");
         }
       }
-      text += "\n";
+      pageTexts.push(page);
     }
+    const text = pageTexts.map((page) => `${page}\n`).join("");
     const { info } = await pdf.getMetadata();
     // O tipo diz objeto, mas esta versão do pdfjs devolve um `Map`.
     const markInfo: unknown = await pdf.getMarkInfo();
@@ -42,6 +46,7 @@ export async function readPdf(data: Uint8Array): Promise<PdfSummary> {
     return {
       pages: pdf.numPages,
       text,
+      pageTexts,
       info: info as Record<string, unknown>,
       marked,
     };

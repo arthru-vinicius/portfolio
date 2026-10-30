@@ -149,7 +149,9 @@ assistentes de IA e ferramentas que leem texto ou dados sem adivinhar o layout.
 - **PDF** (pdfkit): A4, uma coluna, sem tabela, imagem, cabeçalho ou rodapé de página. Texto real,
   com a Inter embutida (licença OFL, do Fontsource) e os acentos certos ao copiar. Sai marcado
   (tagged), com o idioma, título, autor, assunto e palavras-chave. Um caractere que a fonte não
-  tem vira um equivalente, como `→` em `->`.
+  tem vira um equivalente, como `→` em `->`. No máximo duas páginas: se o conteúdo não cabe, o
+  layout fica mais compacto (primeiro as margens e os espaços, depois o texto, até 9,5 pt), e o
+  título de uma seção nunca fica sozinho no fim de uma página.
 - **DOCX** (docx): para quem precisa de um arquivo editável ou de um formato que a plataforma da
   vaga aceite. Uma coluna, sem tabela nem caixa de texto, com os estilos do próprio Word (o nome
   em Título 1, as seções em Título 2, listas com marcador de verdade), Calibri, o idioma do texto
@@ -222,7 +224,8 @@ também derruba as sessões abertas.
   mostrava: se o rascunho mudou em outra aba, a publicação é recusada.
 - **Currículo:** o resumo profissional e os arquivos do rascunho, gerados na hora para conferir
   antes de publicar (`/admin/cv/<arquivo>`). Ali também sai a versão completa, com o telefone,
-  que é entregue só nessa resposta e nunca gravada.
+  que é entregue só nessa resposta e nunca gravada. Se nem o PDF mais compacto cabe em duas
+  páginas, a tela avisa, no idioma que passou.
 - **Histórico:** as revisões publicadas, da mais recente para a mais antiga, cada uma com
   download em YAML e **Restaurar como rascunho**. Restaurar não publica, e as revisões nunca
   mudam: o banco recusa alterá-las ou apagá-las.
