@@ -155,7 +155,9 @@ JSON Resume, for AI assistants and tools that read text or data without guessing
 - **PDF** (pdfkit): A4, one column, no tables, images, page headers or footers. Real text, with
   Inter embedded (OFL license, from Fontsource) and accents that copy correctly. It is tagged,
   with language, title, author, subject and keywords. A character the font doesn't have becomes
-  an equivalent, such as `→` into `->`.
+  an equivalent, such as `→` into `->`. At most two pages: if the content doesn't fit, the
+  layout gets more compact (first the margins and spacing, then the text, down to 9.5 pt), and a
+  section heading never sits alone at the bottom of a page.
 - **DOCX** (docx): for anyone who needs an editable file or a format the job platform accepts.
   One column, no tables or text boxes, with Word's own styles (the name in Heading 1, the
   sections in Heading 2, real bulleted lists), Calibri, the language of the text and the
@@ -231,7 +233,8 @@ password also signs out the open sessions.
   publishing is refused.
 - **Résumé:** the professional summary and the draft's files, generated on the spot to be checked
   before publishing (`/admin/cv/<file>`). The full version, with the phone number, also comes
-  from there; it is only delivered in that response and never stored.
+  from there; it is only delivered in that response and never stored. If not even the most
+  compact PDF fits in two pages, the screen says so for that language.
 - **History:** the published revisions, newest first, each with a YAML download and a restore as
   draft. Restoring doesn't publish, and revisions never change: the database refuses to update or
   delete them.

@@ -11,7 +11,11 @@ import { readDocx } from "../../../tests/support/docx";
 import { readPdf } from "../../../tests/support/pdf";
 
 import { parseResumeFileName, type ResumeFile } from "./catalog";
-import { renderPublicResumeFiles, renderResumeFile } from "./render";
+import {
+  renderPublicResumeFiles,
+  renderResumeFile,
+  resumePdfPages,
+} from "./render";
 
 const publicFixture = () => toPublicDocument(structuredClone(portfolioFixture));
 
@@ -26,8 +30,13 @@ function file(name: string): ResumeFile {
 /** Algo com cara de telefone: oito dígitos ou mais, com ou sem separadores. */
 const PHONE_PATTERN = /\+?\d[\d\s().-]{7,}\d/;
 
-/** Um documento bem maior que o normal, para conferir o limite de páginas. */
-function longDocument(): PortfolioDocument {
+/**
+ * Um documento bem maior que o normal, para conferir o limite de páginas.
+ *
+ * @param items - Quantas experiências.
+ * @param highlights - Quantos destaques em cada uma.
+ */
+function longDocument(items = 5, highlights = 4): PortfolioDocument {
   const document = structuredClone(portfolioFixture);
   const experience = document.blocks.find(
     (block) => block.type === "experience",
@@ -39,12 +48,12 @@ function longDocument(): PortfolioDocument {
   if (first === undefined) {
     throw new Error("sem item");
   }
-  experience.items = Array.from({ length: 5 }, (_, index) => ({
+  experience.items = Array.from({ length: items }, (_, index) => ({
     ...structuredClone(first),
     id: crypto.randomUUID(),
     start: `${2010 + index}-01`,
     end: `${2011 + index}-01`,
-    highlights: Array.from({ length: 4 }, () => ({
+    highlights: Array.from({ length: highlights }, () => ({
       id: crypto.randomUUID(),
       inResume: true,
       text: {
@@ -154,6 +163,68 @@ describe("PDF do currículo", () => {
     expect(short.pages).toBe(1);
     expect(long.pages).toBeLessThanOrEqual(2);
   });
+
+  it("compacta o layout quando o conteúdo passa de duas páginas", async () => {
+    // No layout normal, este documento ocupa três páginas; com margens e
+    // espaços menores, cabe em duas.
+    const pdf = await readPdf(
+      await renderResumeFile(
+        toPublicDocument(longDocument(6, 4)),
+        file("curriculo.pdf"),
+      ),
+    );
+
+    expect(pdf.pages).toBe(2);
+  });
+
+  it("conta as páginas quando nem o layout mais compacto cabe em duas", async () => {
+    const document = toPublicDocument(longDocument(9, 5));
+    expect(await resumePdfPages(document, "pt-BR")).toBeGreaterThan(2);
+    expect(await resumePdfPages(document, "en")).toBeGreaterThan(2);
+  });
+
+  it("nunca deixa o título de uma seção sozinho no fim da página", async () => {
+    const headings = new Set([
+      "Resumo",
+      "Experiência profissional",
+      "Habilidades",
+      "Projetos",
+      "Formação acadêmica",
+      "Prêmios",
+      "Idiomas",
+    ]);
+    // Cada volta acrescenta perto de duas linhas ao resumo, menos que o espaço
+    // de um título com a primeira linha, e empurra o resto para baixo: a quebra
+    // da primeira página passa por todas as seções.
+    let movedHeadings = 0;
+    for (let extra = 0; extra < 50; extra += 2) {
+      const document = structuredClone(portfolioFixture);
+      document.resume.summary["pt-BR"] +=
+        " Mais uma frase do resumo, do tamanho de uma linha inteira do currículo em PDF.".repeat(
+          extra,
+        );
+      const pdf = await readPdf(
+        await renderResumeFile(
+          toPublicDocument(document),
+          file("curriculo.pdf"),
+        ),
+      );
+      pdf.pageTexts.forEach((page, index) => {
+        const lines = page
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line !== "");
+        if (index < pdf.pageTexts.length - 1) {
+          expect(headings.has(lines.at(-1) ?? ""), `${extra}`).toBe(false);
+        }
+        if (index > 0 && headings.has(lines[0] ?? "")) {
+          movedHeadings += 1;
+        }
+      });
+    }
+    // A varredura levou títulos para o topo de uma página nova.
+    expect(movedHeadings).toBeGreaterThan(0);
+  }, 60_000);
 });
 
 describe("DOCX do currículo", () => {

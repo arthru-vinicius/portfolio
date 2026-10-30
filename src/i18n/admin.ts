@@ -375,6 +375,9 @@ export const adminMessages = {
       "A versão completa é gerada só para você baixar e nunca vai para o site.",
     noPhone:
       "Para gerar a versão completa, com telefone, preencha o telefone no Perfil.",
+    /** Quando nem o PDF mais compacto cabe em duas páginas. */
+    tooLong: (pages: number) =>
+      `O PDF ficou com ${pages} páginas, mesmo no formato mais compacto. Para caber em 2, desmarque destaques ou itens em “No currículo”.`,
     /** Acrescentado ao nome do arquivo, como `ana-curriculo-rascunho.pdf`. */
     draftSuffix: "rascunho",
     fullSuffix: "completo",

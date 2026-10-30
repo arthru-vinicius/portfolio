@@ -53,19 +53,58 @@ const COLORS = {
   rule: "#c9d1cc",
 };
 
-/** Tamanhos em pontos. O corpo fica em 10 pt, dentro do que o ATS lê bem. */
-const SIZES = {
-  name: 20,
-  headline: 12,
-  heading: 11.5,
-  body: 10,
-  meta: 9.5,
+/** O currículo cabe em no máximo duas páginas. */
+export const RESUME_MAX_PAGES = 2;
+
+/** Tamanhos e espaços de um jeito de dispor o currículo, em pontos e linhas. */
+type Density = {
+  sizes: {
+    name: number;
+    headline: number;
+    heading: number;
+    body: number;
+    meta: number;
+  };
+  margins: { top: number; bottom: number; left: number; right: number };
+  /** Espaço antes do título de uma seção, em linhas. */
+  sectionGap: number;
+  /** Espaço entre dois itens de uma seção, em linhas. */
+  itemGap: number;
 };
 
-const MARGINS = { top: 46, bottom: 46, left: 52, right: 52 };
+const COMPACT_MARGINS = { top: 36, bottom: 36, left: 48, right: 48 };
 
-/** Espaço para um título de seção e a primeira linha dela não ficarem separados. */
-const KEEP_WITH_HEADING = 64;
+/**
+ * Do mais folgado ao mais compacto. O PDF sai no primeiro que cabe em
+ * `RESUME_MAX_PAGES`: primeiro diminuem as margens e os espaços, e só depois
+ * o texto, que não fica abaixo de 9,5 pt, dentro do que o ATS lê bem.
+ */
+const DENSITIES: readonly Density[] = [
+  {
+    sizes: { name: 20, headline: 12, heading: 11.5, body: 10, meta: 9.5 },
+    margins: { top: 46, bottom: 46, left: 52, right: 52 },
+    sectionGap: 0.7,
+    itemGap: 0.4,
+  },
+  {
+    sizes: { name: 20, headline: 12, heading: 11.5, body: 10, meta: 9.5 },
+    margins: COMPACT_MARGINS,
+    sectionGap: 0.5,
+    itemGap: 0.25,
+  },
+  {
+    sizes: { name: 19, headline: 11.5, heading: 11, body: 9.5, meta: 9 },
+    margins: COMPACT_MARGINS,
+    sectionGap: 0.5,
+    itemGap: 0.25,
+  },
+];
+
+/**
+ * Espaço entre o título da seção e o conteúdo: 1,5 pt até o filete e 6 pt
+ * depois dele.
+ */
+const RULE_GAP = 7.5;
 
 /** Espaço para o cabeçalho de um item e a primeira linha dele. */
 const KEEP_ITEM_HEADER = 44;
@@ -84,10 +123,16 @@ type Struct = PDFKit.PDFStructureElement;
 class ResumeWriter {
   private readonly doc: PDFKit.PDFDocument;
   private readonly layout: ResumeLayout;
+  private readonly density: Density;
 
-  constructor(doc: PDFKit.PDFDocument, layout: ResumeLayout) {
+  constructor(doc: PDFKit.PDFDocument, layout: ResumeLayout, density: Density) {
     this.doc = doc;
     this.layout = layout;
+    this.density = density;
+  }
+
+  private get sizes(): Density["sizes"] {
+    return this.density.sizes;
   }
 
   private get left(): number {
@@ -130,7 +175,7 @@ class ResumeWriter {
       this.doc.struct("P", {}, () => {
         this.style(
           options.font ?? REGULAR,
-          options.size ?? SIZES.body,
+          options.size ?? this.sizes.body,
           options.color ?? COLORS.text,
         );
         this.doc.text(`${value} `, this.left, this.doc.y, {
@@ -147,7 +192,7 @@ class ResumeWriter {
     parent: Struct,
     lead: string,
     rest: string,
-    size = SIZES.body,
+    size = this.sizes.body,
   ): void {
     const leadText = fitToFont(lead).trim();
     const restText = fitToFont(rest).trim();
@@ -179,20 +224,20 @@ class ResumeWriter {
     const list = this.doc.struct("L");
     parent.add(list);
     for (const value of values) {
-      this.style(REGULAR, SIZES.body, COLORS.text);
+      this.style(REGULAR, this.sizes.body, COLORS.text);
       this.ensureSpace(this.doc.currentLineHeight(true) + 2);
       const top = this.doc.y;
       const item = this.doc.struct("LI");
       list.add(item);
       item.add(
         this.doc.struct("Lbl", {}, () => {
-          this.style(REGULAR, SIZES.body, COLORS.accent);
+          this.style(REGULAR, this.sizes.body, COLORS.accent);
           this.doc.text("• ", this.left, top, { lineBreak: false });
         }),
       );
       item.add(
         this.doc.struct("LBody", {}, () => {
-          this.style(REGULAR, SIZES.body, COLORS.text);
+          this.style(REGULAR, this.sizes.body, COLORS.text);
           this.doc.text(`${value} `, this.left + BULLET_INDENT, top, {
             width: this.width - BULLET_INDENT,
             lineGap: 1.5,
@@ -223,7 +268,7 @@ class ResumeWriter {
     }
     parent.add(
       this.doc.struct("P", {}, () => {
-        this.style(REGULAR, SIZES.meta, COLORS.muted);
+        this.style(REGULAR, this.sizes.meta, COLORS.muted);
         segments.forEach((segment, index) => {
           const text = fitToFont(segment.text);
           const options = {
@@ -244,14 +289,33 @@ class ResumeWriter {
     this.doc.moveDown(0.15);
   }
 
-  private section(title: string, draw: (section: Struct) => void): void {
-    this.doc.moveDown(0.7);
-    this.ensureSpace(KEEP_WITH_HEADING);
+  /**
+   * Espaço para o título de uma seção e o começo dela, para o título nunca
+   * ficar sozinho no fim da página: o cabeçalho de um item, se a seção começa
+   * por um, ou uma linha de texto.
+   */
+  private sectionStart(first: ResumeLine | undefined): number {
+    this.style(BOLD, this.sizes.heading, COLORS.accent);
+    const heading = this.doc.currentLineHeight(true) + RULE_GAP;
+    if (first?.kind === "item") {
+      return heading + KEEP_ITEM_HEADER;
+    }
+    this.style(REGULAR, this.sizes.body, COLORS.text);
+    return heading + this.doc.currentLineHeight(true) + 2;
+  }
+
+  private section(
+    title: string,
+    lines: readonly ResumeLine[],
+    draw: (section: Struct) => void,
+  ): void {
+    this.doc.moveDown(this.density.sectionGap);
+    this.ensureSpace(this.sectionStart(lines[0]));
     const section = this.doc.struct("Sect");
     this.doc.addStructure(section);
     section.add(
       this.doc.struct("H2", {}, () => {
-        this.style(BOLD, SIZES.heading, COLORS.accent);
+        this.style(BOLD, this.sizes.heading, COLORS.accent);
         this.doc.text(`${fitToFont(title)} `, this.left, this.doc.y, {
           width: this.width,
         });
@@ -278,7 +342,7 @@ class ResumeWriter {
     this.doc.addStructure(header);
     header.add(
       this.doc.struct("H1", {}, () => {
-        this.style(BOLD, SIZES.name, COLORS.text);
+        this.style(BOLD, this.sizes.name, COLORS.text);
         this.doc.text(`${fitToFont(layout.name)} `, this.left, this.doc.y, {
           width: this.width,
         });
@@ -286,12 +350,12 @@ class ResumeWriter {
     );
     this.doc.moveDown(0.1);
     this.paragraph(header, layout.headline, {
-      size: SIZES.headline,
+      size: this.sizes.headline,
       color: COLORS.accent,
       gap: 0.3,
     });
     this.paragraph(header, layout.contact, {
-      size: SIZES.meta,
+      size: this.sizes.meta,
       color: COLORS.muted,
       gap: 0.1,
     });
@@ -303,7 +367,7 @@ class ResumeWriter {
     switch (line.kind) {
       case "item":
         if (!first) {
-          this.doc.moveDown(0.4);
+          this.doc.moveDown(this.density.itemGap);
         }
         this.ensureSpace(KEEP_ITEM_HEADER);
         this.labeledParagraph(section, line.lead, line.rest);
@@ -313,7 +377,7 @@ class ResumeWriter {
         return;
       case "meta":
         this.paragraph(section, line.text, {
-          size: SIZES.meta,
+          size: this.sizes.meta,
           color: COLORS.muted,
         });
         return;
@@ -332,12 +396,15 @@ class ResumeWriter {
   write(): void {
     this.identity();
     for (const { title, lines } of this.layout.sections) {
-      this.section(title, (section) => {
+      this.section(title, lines, (section) => {
         lines.forEach((line, index) => this.line(section, line, index === 0));
       });
     }
   }
 }
+
+/** O PDF do currículo e quantas páginas ele tem. */
+export type ResumePdf = { file: Buffer; pages: number };
 
 /**
  * Gera o PDF do currículo, no formato que recrutadores e sistemas de triagem
@@ -348,17 +415,37 @@ class ResumeWriter {
  *   certos ao copiar o texto;
  * - os endereços escritos por extenso, além do link;
  * - PDF marcado (títulos, parágrafos e listas), com o idioma e os metadados
- *   (título, autor, assunto e palavras-chave).
+ *   (título, autor, assunto e palavras-chave);
+ * - no máximo duas páginas: se o conteúdo não cabe, o layout fica mais
+ *   compacto (`DENSITIES`). Se nem o mais compacto cabe, o PDF sai com mais
+ *   páginas, e o painel avisa.
  *
  * @param model - O currículo, de `buildResumeModel`.
- * @returns O arquivo PDF.
+ * @returns O arquivo PDF e o número de páginas dele.
  */
-export async function renderResumePdf(model: ResumeModel): Promise<Buffer> {
-  const { regular, bold } = loadFonts();
+export async function renderResumePdf(model: ResumeModel): Promise<ResumePdf> {
   const layout = layoutResume(model);
+  let pdf: ResumePdf | null = null;
+  for (const density of DENSITIES) {
+    pdf = await drawResume(layout, density);
+    if (pdf.pages <= RESUME_MAX_PAGES) {
+      break;
+    }
+  }
+  if (pdf === null) {
+    throw new Error("nenhuma densidade para o currículo");
+  }
+  return pdf;
+}
+
+async function drawResume(
+  layout: ResumeLayout,
+  density: Density,
+): Promise<ResumePdf> {
+  const { regular, bold } = loadFonts();
   const doc = new PDFDocument({
     size: "A4",
-    margins: MARGINS,
+    margins: density.margins,
     // O pdfkit aceita o arquivo da fonte padrão, e assim não carrega a
     // Helvetica; o @types/pdfkit só tipa o nome de uma fonte embutida.
     font: regular as unknown as string,
@@ -382,7 +469,13 @@ export async function renderResumePdf(model: ResumeModel): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
   });
-  new ResumeWriter(doc, layout).write();
+  // A primeira página vem com o documento; as outras, pelo `addPage`, seja o
+  // do `ensureSpace`, seja o de um texto que continua na página seguinte.
+  let pages = 1;
+  doc.on("pageAdded", () => {
+    pages += 1;
+  });
+  new ResumeWriter(doc, layout, density).write();
   doc.end();
-  return finished;
+  return { file: await finished, pages };
 }

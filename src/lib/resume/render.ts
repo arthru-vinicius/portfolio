@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { PublicDocument } from "@/content/public-projection";
-import { localeHomePath } from "@/i18n/config";
+import { localeHomePath, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 
 import { resumeFiles, type ResumeFile } from "./catalog";
@@ -58,7 +58,7 @@ export async function renderResumeFile(
   const portfolio = absolute(localeHomePath(file.locale));
   switch (file.format) {
     case "pdf":
-      return renderResumePdf(model);
+      return (await renderResumePdf(model)).file;
     case "docx":
       return renderResumeDocx(model);
     case "md":
@@ -107,4 +107,19 @@ export async function renderPublicResumeFiles(
     );
   }
   return rendered;
+}
+
+/**
+ * Quantas páginas tem o PDF público de um idioma. O gerador compacta o layout
+ * para caber em `RESUME_MAX_PAGES`; quando nem assim cabe, o painel avisa.
+ *
+ * @param document - O documento, sem os campos privados.
+ * @param locale - O idioma.
+ * @returns O número de páginas.
+ */
+export async function resumePdfPages(
+  document: PublicDocument,
+  locale: Locale,
+): Promise<number> {
+  return (await renderResumePdf(buildResumeModel(document, locale))).pages;
 }
